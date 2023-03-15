@@ -6,7 +6,7 @@ import {
     VisualizationDefinition
 } from './types'
 
-export const formatType = (valueFormat: string) => {
+export const d3formatType = (valueFormat: string) => {
     if (!valueFormat) return undefined
     let format = ''
     switch (valueFormat.charAt(0)) {
@@ -26,11 +26,16 @@ export const formatType = (valueFormat: string) => {
 
     switch (valueFormat.slice(-1)) {
         case '%':
-            format += '%'; break
+            format = format.slice(0,-1) + `${Number(format.slice(-1)) - 1}%`; break
         case '0':
             format += 'f'; break
     }
-    return d3.format(format)
+    // console.log({valueFormat, format});
+    return format
+}
+
+export const formatType = (valueFormat: string) => {
+    return d3.format(d3formatType(valueFormat));
 }
 
 export const handleErrors = (vis: VisualizationDefinition, res: VisQueryResponse, options: VisConfig) => {
