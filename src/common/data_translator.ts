@@ -57,41 +57,42 @@ export function lookerDataTranslator(
     } {
 
     const data = in_data;
+
+    const acessor_function = (d : Dimension | Pivot | Measure ) => d.model ? d.model + '.' + d.name : d.name ;
   
     const dimensions: Dimension[] = query_response.fields.dimensions.map((dim : Field) => ({
             name: dim.name.includes('.') ? dim.name.split('.')[1] : dim.name, 
             model: dim.name.includes('.') ? dim.name.split('.')[0] : null, 
             label: dim.label_short,
             type: dim.type,
-            keys: [...new Set(in_data.map((d : Row) => ['date_month','date_quarter'].includes(dim.type) ? d[dim.name].value + "-01" : d[dim.name].value))],
             info: 'dimension',
+            keys: [...new Set(in_data.map((d : Row) => ['date_month','date_quarter'].includes(dim.type) ? d[dim.name].value + "-01" : d[dim.name].value))],
             }));
-
-    const measures: Measure[] = query_response.fields.measure_like.map((mes: Field) => ({
-            name: mes.name.includes('.') ? mes.name.split('.')[1] : mes.name, 
-            model: mes.name.includes('.') ? mes.name.split('.')[0] : null, 
-            label: mes.name.includes('.') ? mes.label_short : mes.label,
-            type: mes.name.includes('.') ? mes.type : 'sum',
-            info: 'measure',
-            is_table_calculation: mes.is_table_calculation,
-            looker_value_format: mes.value_format,
-            }));
-  
+    
     const pivots: Pivot[] = query_response.fields.pivots.map((piv: Field, i) => ({
             name: piv.name.includes('.') ? piv.name.split('.')[1] : piv.name,
             model: piv.name.includes('.') ? piv.name.split('.')[0] : null, 
             label: piv.label_short,
             type: piv.type,
-            keys: [...new Set(query_response.pivots.map((d: {key: string}) => d.key.split('|FIELD|')[i]))],
             info: 'pivot',
+            keys: []
+          })).map((piv : Pivot, i) => ({
+            ...piv,
+            keys: [...new Set(query_response.pivots.map((d) => d.data[acessor_function(piv)]))]
           }))
 
-    const acessor_function = (d : Dimension | Pivot | Measure ) => d.model ? d.model + '.' + d.name : d.name ;
+    const measures: Measure[] = query_response.fields.measure_like.map((mes: Field) => ({
+      name: mes.name.includes('.') ? mes.name.split('.')[1] : mes.name, 
+      model: mes.name.includes('.') ? mes.name.split('.')[0] : null, 
+      label: mes.name.includes('.') ? mes.label_short : mes.label,
+      type: mes.name.includes('.') ? mes.type : 'sum',
+      info: 'measure',
+      is_table_calculation: mes.is_table_calculation,
+      looker_value_format: mes.value_format,
+      }));
   
     const all_props = [...dimensions, ...pivots]
-  
-    const time_dim_acessor = acessor_function(dimensions[0])
-    
+      
     let prepared_dataset = data; //[];
 
     if (pivots.length == 0) {
@@ -102,27 +103,39 @@ export function lookerDataTranslator(
         // Auxiliary functions
         const equals = (a, b) => JSON.stringify(a) === JSON.stringify(b);
         const cartesian = (...a) => a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
+
+        // Adjustments to Looker's weird inclusion of a last undetected value after the last '|FIELD\'
+        const max_pivot_index = pivots.length;
+        const fix_pivot_key = (pivot_key) => pivot_key.split('|FIELD|').slice(0, max_pivot_index).join('|FIELD|');
       
+        // Function to get the data values of the built dim x pivots combination
         const value_acessor = function(mes,row){
-          const filtered_data = data.filter(d_row => equals(
+          const filtered_before_pivots = data.find(d_row => equals(
                                        dimensions.map(dim => d_row[acessor_function(dim)].value),
                                        dimensions.map(dim => row[dim.name])
                                                     )
                                     )
-                                   [0]
-                                   [acessor_function(mes)]  
-                                   [row.pivots_key];
+                                   [acessor_function(mes)];
+
+          const adjusted_pivot_key = Object.keys(filtered_before_pivots).find(key => fix_pivot_key(key) == row.pivots_key)
+          const filtered_data = filtered_before_pivots[adjusted_pivot_key];
+
           return filtered_data ? filtered_data.value : filtered_data;
         }
         
-        // First making the cartesian product of all props and turning them into nice objects
+        // Making the cartesian product of all props and turning them into nice objects
         const rows_props =  cartesian(...all_props.map(prop => prop.keys)).map((row : Array<Array<string>>) => 
                      Object.assign(
                        {},...row.map( (prop,i) => ({[all_props[i].name] : prop})),
                   ));
 
+        // Function to get the pivots keys based on a data row
+        function get_pivots_key(row) {
+          return pivots.map(pivot => row[pivot.name]).join('|FIELD|');
+        }
+        
         // Calculating the pivots_key to make it easier to access multi-pivots later
-        const row_props_piv = rows_props.map(row => ({...row, pivots_key: [...pivots.map(p => row[p.name])].join('|FIELD|')}));
+        const row_props_piv = rows_props.map(row => ({...row, pivots_key: get_pivots_key(row)}));
 
         // Finally populating with the actual measure values
         const row_values_raw = row_props_piv.map(row => 
