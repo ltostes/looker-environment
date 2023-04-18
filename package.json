@@ -26,7 +26,10 @@
     "@emotion/styled": "^11.10.6",
     "@mui/material": "^5.11.12",
     "@mui/x-data-grid": "^6.0.1",
+    "@observablehq/plot": "^0.6.4",
     "d3": "^7.8.2",
+    "i": "^0.3.7",
+    "npm": "^9.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }
