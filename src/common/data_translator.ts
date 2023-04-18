@@ -145,7 +145,7 @@ export function lookerDataTranslator(
                         );
 
         // Filtering all 'unassigned' from the cartesian product
-        const row_values = row_values_raw.filter(d => d[measures[0].name]);
+        const row_values = row_values_raw; //.filter(d => d[measures[0].name]);
       
         prepared_dataset =  row_values;
     }
