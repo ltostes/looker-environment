@@ -324,7 +324,7 @@ const vis : VisualizationDefinition = {
 
             // Additional parameters
             // This iteration is to allow variables to be reused in definitions
-            let extra = {measures, dimensions, pivots };
+            let extra = {measures, dimensions, pivots, width, height };
             params['extra_params'].split(';').forEach(p => Object.assign(extra, interpret_fun(p,translated_data,extra)));
 
             // Incrementing data
