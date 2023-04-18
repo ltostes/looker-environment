@@ -1,6 +1,7 @@
 import {
     VisQueryResponse
 } from './types'
+import { d3formatType } from './utils';
 
 // Types
 
@@ -89,6 +90,7 @@ export function lookerDataTranslator(
       info: 'measure',
       is_table_calculation: mes.is_table_calculation,
       looker_value_format: mes.value_format,
+      d3_value_format: d3formatType(mes.value_format),
       }));
   
     const all_props = [...dimensions, ...pivots]
