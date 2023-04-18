@@ -1,0 +1,30 @@
+#vis {
+    color: red;
+    transition: all 2ms;
+    &:hover {
+      color: blue;
+    }
+  }
+  
+  .column-header-test {
+    font-weight: bold;
+    font-size: '2em';
+  }
+  
+  .header-cell-test {
+    font-weight: bold;
+    font-size: medium;
+  }
+  
+  .group-header {
+    font-weight: bold;
+    font-size: large;
+    text-align: center;
+  }
+  
+  .cell-test-positive{
+    color: darkgreen;
+  }
+  .cell-test-negative{
+    color:darkred;
+  }
