@@ -3,7 +3,9 @@ const TerserPlugin = require("terser-webpack-plugin");
 
 module.exports = {
   entry: {
-    myCustomViz: "./src/visualizations/my-custom-viz.tsx"
+    myCustomViz: "./src/visualizations/my-custom-viz.tsx",
+    portfolioPeriodTable: "./src/visualizations/portfolio-period-table.tsx",
+    observablePlotPrototyper: "./src/visualizations/observableplot_prototyper.tsx"
   },
   output: {
     filename: "[name].js",
