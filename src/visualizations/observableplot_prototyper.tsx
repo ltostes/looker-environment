@@ -241,6 +241,13 @@ const get_options = function () {
                 {'Rect':'rect'},
                 {'RectX':'rectX'},
                 {'RectY':'rectY'},
+                {'Tip':'tip'},
+                {'Tree':'tree'},
+                {'Raster':'raster'},
+                {'GridX':'gridX'},
+                {'GridY':'gridY'},
+                {'Auto':'auto'},
+                {'Crosshair':'crosshair'},
             ],
             display_size: 'normal',
             default: 'abs',
@@ -360,7 +367,7 @@ const vis : VisualizationDefinition = {
 
                 marks:
                     mark_configs
-                        .filter( d => ['dot','line','areaY','areaX','barY','barX','text','tickY','tickX','link','ruleY','ruleX','cell','arrow','vector','image','frame', 'rect', 'rectX', 'rectY'].includes(d.type) && (d.show))
+                        .filter( d => ['dot','line','areaY','areaX','barY','barX','text','tickY','tickX','link','ruleY','ruleX','cell','arrow','vector','image','frame', 'rect', 'rectX', 'rectY','tip','tree','raster','gridX','gridY','auto','crosshair'].includes(d.type) && (d.show))
                         .map(function(d) {
 
                             const mark_config = interpret_fun(d.config,data,extra);
@@ -393,6 +400,13 @@ const vis : VisualizationDefinition = {
                                 case 'rect': return Plot.rect(data, plot_params);
                                 case 'rectX': return Plot.rectX(data, plot_params);
                                 case 'rectY': return Plot.rectY(data, plot_params);
+                                case 'tip': return Plot.tip(data, plot_params);
+                                case 'tree': return Plot.tree(data, plot_params);
+                                case 'raster': return Plot.raster(data, plot_params);
+                                case 'gridX': return Plot.gridX(data, plot_params);
+                                case 'gridY': return Plot.gridY(data, plot_params);
+                                case 'auto': return Plot.auto(data, plot_params);
+                                case 'crosshair': return Plot.crosshair(data, plot_params);
 
                             }
                     }),
