@@ -369,6 +369,8 @@ const vis : VisualizationDefinition = {
                                 ...mark_config
                             };
 
+                            if (plot_params.hide) {return;}
+
                             switch(d.type) {
 
                                 case 'dot': return Plot.dot(data, plot_params);
