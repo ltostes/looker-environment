@@ -335,13 +335,13 @@ const vis : VisualizationDefinition = {
             params['extra_params'].split(';').forEach(p => Object.assign(extra, interpret_fun(p,translated_data,extra)));
 
             // Incrementing data
-            const data = translated_data.map((d,i) => ({
+            const data_prefilter = translated_data.map((d,i) => ({
                 ...d,
                 ...interpret_fun(params['data'], translated_data,extra, d, i),
             }))
 
             // Filtering data
-            // TODO;
+            const data = data_prefilter.filter(d => !d.filter);
 
             // Config parameters
             const x_config = interpret_fun(params['x'],data,extra);
