@@ -112,12 +112,13 @@ export function lookerDataTranslator(
       
         // Function to get the data values of the built dim x pivots combination
         const value_acessor = function(mes,row){
-          const filtered_before_pivots = data.find(d_row => equals(
+          const filtered_obj_before_pivots = data.find(d_row => equals(
                                        dimensions.map(dim => d_row[acessor_function(dim)].value),
                                        dimensions.map(dim => row[dim.name])
                                                     )
-                                    )
-                                   [acessor_function(mes)];
+                                    );
+          if (typeof filtered_obj_before_pivots == 'undefined') {return null;}
+          const filtered_before_pivots = filtered_obj_before_pivots[acessor_function(mes)];
 
           const adjusted_pivot_key = Object.keys(filtered_before_pivots).find(key => fix_pivot_key(key) == row.pivots_key)
           const filtered_data = filtered_before_pivots[adjusted_pivot_key];
