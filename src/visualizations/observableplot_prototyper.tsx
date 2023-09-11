@@ -248,6 +248,8 @@ const get_options = function () {
                 {'GridY':'gridY'},
                 {'Auto':'auto'},
                 {'Crosshair':'crosshair'},
+                {'CrosshairX':'crosshairX'},
+                {'CrosshairY':'crosshairY'},
             ],
             display_size: 'normal',
             default: 'abs',
@@ -407,6 +409,8 @@ const vis : VisualizationDefinition = {
                                 case 'gridY': return Plot.gridY(data, plot_params);
                                 case 'auto': return Plot.auto(data, plot_params);
                                 case 'crosshair': return Plot.crosshair(data, plot_params);
+                                case 'crosshairX': return Plot.crosshairX(data, plot_params);
+                                case 'crosshairY': return Plot.crosshairY(data, plot_params);
 
                             }
                     }),
