@@ -6,7 +6,8 @@ module.exports = {
     myCustomViz: "./src/visualizations/my-custom-viz.tsx",
     portfolioPeriodTable: "./src/visualizations/portfolio-period-table.tsx",
     observablePlotPrototyper: "./src/visualizations/observableplot_prototyper.tsx",
-    mixAdjustedRR: "./src/visualizations/mixadjust_rr.tsx"
+    mixAdjustedRR: "./src/visualizations/mixadjust_rr.tsx",
+    observablePlotPrototyperLiveParams: "./src/visualizations/observableplot_prototyper_liveparams.tsx"
   },
   output: {
     filename: "[name].js",
