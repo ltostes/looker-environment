@@ -3,7 +3,7 @@ import { handleErrors, d3formatType } from '../common/utils';
 import { lookerDataTranslator } from '../common/data_translator';
 // import './my-custom-viz.scss'
 
-import { Radio, RadioGroup, FormControl, FormControlLabel, FormLabel, Container, Box, Grid, Typography } from '@mui/material';
+import { Radio, RadioGroup, FormControl, FormControlLabel, FormLabel, Container, Box, Grid, Typography, Checkbox, FormGroup } from '@mui/material';
 
 import React from 'react'
 import ReactDOM from 'react-dom'
@@ -19,15 +19,33 @@ interface MarkConfig {
     config: string
 }
 
-function TestComponent({chartConfig, params}) {
+function RenderComponent({chartConfig, params}) {
 
-  const initialParameters = Object.assign({},...params.map(p => ({[p.varname]:p.config_obj.default})));
+  const initialParameters = Object.assign({},...params.map(p => 
+    (
+        (p.type == 'radio')
+        && ({[p.varname]:p.config_obj.default})
+    )
+    ||
+    (
+        (p.type == 'checklist')
+        && ({[p.varname] : Object.assign({},...p.config_obj.list.map((it => ({[it]: true}))), {whole_list: p.config_obj.list})})
+    )
+    ));
 
   const [liveParameters, setLiveParameters] = React.useState(initialParameters);
 
-  function handleParamUpdate(event, varname) {
-    const updatedLiveParameters = ({...liveParameters, [varname]: event.target.value});
-    setLiveParameters(updatedLiveParameters);
+  function handleParamUpdate(event, varname, type) {
+    if (type == 'radio') {
+        const updatedLiveParameters = ({...liveParameters, [varname]: event.target.value});
+        setLiveParameters(updatedLiveParameters);
+    }
+    else if (type == 'checklist') {
+        const updatedChecklist = ({...liveParameters[varname], [event.target.name] : event.target.checked});
+        const updatedWholeList = Object.entries(updatedChecklist).filter((d) => d[1] && (d[0] != 'whole_list')).map((d) => d[0]);
+        const updatedLiveParameters = ({...liveParameters, [varname]: {...updatedChecklist, whole_list: updatedWholeList }});
+        setLiveParameters(updatedLiveParameters);
+    }
   }
 
   const headerRef = React.useRef<HTMLInputElement>();
@@ -38,7 +56,6 @@ function TestComponent({chartConfig, params}) {
     const gridHeight = gridRef.current.clientHeight;
     const completedChartConfig = ({...chartConfig, extra: {...chartConfig.extra, ...liveParameters}, height: chartConfig.height - gridHeight});
     const chart = buildChart(completedChartConfig);
-    // const chart = buildMixAdjustChart(completedChartConfig);
     headerRef.current.append(chart);
 
     return () => chart.remove();
@@ -49,13 +66,13 @@ function TestComponent({chartConfig, params}) {
         <Grid container spacing={1} ref={gridRef}>
           {
             params.map(p => 
-                p.show && <Grid item xs>
+                (p.show && p.type == 'radio' && <Grid item xs>
                       <FormControl>
                         <FormLabel>{p.viewlabel}</FormLabel>
                         <RadioGroup
                           row
                           value={liveParameters[p.varname]}
-                          onChange={(event) => handleParamUpdate(event,p.varname)}
+                          onChange={(event) => handleParamUpdate(event,p.varname, 'radio')}
                         >
                           {
                             p.config_obj.list.map(k => <FormControlLabel value={k} control={<Radio />} label={k} componentsProps={{typography: <Typography variant="body2"/>}} />)
@@ -63,9 +80,37 @@ function TestComponent({chartConfig, params}) {
                         </RadioGroup>
                       </FormControl>
                     </Grid>
+                ) 
+                ||
+                (
+                    p.show && p.type == 'checklist' &&
+                    <Grid item xs>
+                        <FormControl>
+                        <FormLabel>{p.viewlabel}</FormLabel>
+                        <FormGroup
+                            row
+                        >
+                        {
+                            p.config_obj.list.map(k => 
+                                <FormControlLabel 
+                                    control={
+                                        <Checkbox
+                                            checked={liveParameters[p.varname][k]}
+                                            onChange={(event) => handleParamUpdate(event, p.varname, 'checklist')}
+                                            name={k}
+                                        />
+                                    } 
+                                    label={k}
+                                    componentsProps={{typography: <Typography variant="body2"/>}}
+                                />
+                            )
+                        }
+                        </FormGroup>
+                        </FormControl>
+                    </Grid>
+                )
               )
           }
-        
         </Grid>
         <header className="App-header" ref={headerRef} />
       </div>
@@ -162,323 +207,6 @@ function buildChart({
           
           // Attaching the visuals
           return addTooltips(Plot.plot(plot_arguments),tooltip_options);
-}
-
-function buildMixAdjustChart({
-  translated_data,
-  interpret_fun,
-  params,
-  extra,
-  height,
-  width
-}) {
-  // Data calculations
-  const [g_segment_data, mix_adjusted_whole] = calculateMixAdjustData(
-    translated_data,
-    extra
-  );
-
-  // Graph params
-  const segment_domain = extra.dimensions[2].keys;
-  const segment_label_function_1 = (d) => `\n${d}\n\n (Mix effect)`;
-  const segment_label_function_2 = (d) => `\n${d}\n\n (Perf)`;
-
-  const whole_bar_x_labels = ["RR (ref)", "RR (ref)\n Mix Adjusted", "RR main"];
-  const x_domain = [
-    whole_bar_x_labels[0],
-    ...segment_domain.map(segment_label_function_1),
-    whole_bar_x_labels[1],
-    ...segment_domain.map(segment_label_function_2),
-    whole_bar_x_labels[2]
-  ];
-  const solid_bars_values = [
-    mix_adjusted_whole.n_ref / mix_adjusted_whole.d_ref,
-    mix_adjusted_whole.rr_mixadjusted_compounded,
-    mix_adjusted_whole.n_main / mix_adjusted_whole.d_main
-  ];
-  const perc_margin = 0.01;
-  const y_domain = [
-    d3.min(solid_bars_values) - perc_margin,
-    d3.max(solid_bars_values) + perc_margin
-  ];
-  const opacity_solid_bars = 0.6;
-
-  const label_params = {};
-
-  // Finally plotting
-  return Plot.plot({
-    marginLeft: 50,
-    width: width,
-    height: height,
-    insetTop: 10,
-    insetBottom: 10,
-    marginBottom: 45,
-    style: { fontSize: "12px" },
-    x: {
-      domain: x_domain,
-      label: null
-    },
-    y: {
-      tickFormat: ".1%",
-      nice: true,
-      label: "RR 1",
-      grid: true,
-      zero: false,
-      domain: y_domain
-    },
-    color: {
-      range: ["red", "green"]
-    },
-    marks: [
-      // Whole bars
-      Plot.barY([mix_adjusted_whole], {
-        x: [whole_bar_x_labels[0]],
-        y: (d) => d.n_ref / d.d_ref,
-        clip: true,
-        opacity: opacity_solid_bars
-      }),
-      Plot.barY([mix_adjusted_whole], {
-        x: [whole_bar_x_labels[1]],
-        y: (d) => d.rr_mixadjusted_compounded,
-        clip: true,
-        opacity: opacity_solid_bars
-      }),
-      Plot.barY([mix_adjusted_whole], {
-        x: [whole_bar_x_labels[2]],
-        y: (d) => d.n_main / d.d_main,
-        clip: true,
-        opacity: opacity_solid_bars
-      }),
-      // Whole bars labels
-      Plot.text([mix_adjusted_whole], {
-        x: [whole_bar_x_labels[0]],
-        y: (d) => d.n_ref / d.d_ref,
-        text: (d) => `${d3.format(".1%")(d.n_ref / d.d_ref)}`,
-        dy: -10,
-        lineAnchor: "bottom",
-        fontWeight: "bold"
-      }),
-      Plot.text([mix_adjusted_whole], {
-        x: [whole_bar_x_labels[1]],
-        y: (d) => d.rr_mixadjusted_compounded,
-        text: (d) => `${d3.format(".1%")(d.rr_mixadjusted_compounded)}`,
-        dy: -10,
-        lineAnchor: "bottom",
-        fontWeight: "bold"
-      }),
-      Plot.text([mix_adjusted_whole], {
-        x: [whole_bar_x_labels[2]],
-        y: (d) => d.n_main / d.d_main,
-        text: (d) => `${d3.format(".1%")(d.n_main / d.d_main)}`,
-        dy: -10,
-        lineAnchor: "bottom",
-        fontWeight: "bold"
-      }),
-      // Volume effect bars
-      Plot.barY(g_segment_data, {
-        x: (d) => segment_label_function_1(d.segment),
-        // y: "volume_effect",
-        y1: "volume_compound_pre",
-        y2: "volume_compound_post",
-        fill: (d) => d.volume_effect > 0,
-        opacity: 0.6
-      }),
-      // Volume effect labels
-      Plot.text(g_segment_data, {
-        filter: (d) => d.volume_effect < 0,
-        x: (d) => segment_label_function_1(d.segment),
-        y: (d) => d.volume_compound_post,
-        fill: (d) => d.volume_effect > 0,
-        text: (d) => `${d3.format("+.1%")(d.volume_effect)}`,
-        lineAnchor: "top",
-        fontWeight: "bold",
-        dy: 5
-      }),
-      Plot.text(g_segment_data, {
-        filter: (d) => d.volume_effect > 0,
-        x: (d) => segment_label_function_1(d.segment),
-        y: (d) =>
-          d.volume_effect > 0 ? d.volume_compound_post : d.volume_compound_pre,
-        fill: (d) => d.volume_effect > 0,
-        text: (d) => `${d3.format("+.1%")(d.volume_effect)}`,
-        lineAnchor: "bottom",
-        fontWeight: "bold",
-        dy: -5
-      }),
-      // Segment effect bars
-      Plot.barY(g_segment_data, {
-        x: (d) => segment_label_function_2(d.segment),
-        // y: "volume_effect",
-        y1: "segment_compound_pre",
-        y2: "segment_compound_post",
-        fill: (d) => d.segment_effect > 0,
-        opacity: 0.6
-      }),
-      // Segment effect labels
-      Plot.text(g_segment_data, {
-        filter: (d) => d.segment_effect < 0,
-        x: (d) => segment_label_function_2(d.segment),
-        y: (d) => d.segment_compound_post,
-        fill: (d) => d.segment_effect > 0,
-        text: (d) => `${d3.format("+.1%")(d.segment_effect)}`,
-        lineAnchor: "top",
-        fontWeight: "bold",
-        dy: 5
-      }),
-      Plot.text(g_segment_data, {
-        filter: (d) => d.segment_effect > 0,
-        x: (d) => segment_label_function_2(d.segment),
-        y: (d) => d.segment_compound_post,
-        fill: (d) => d.segment_effect > 0,
-        text: (d) => `${d3.format("+.1%")(d.segment_effect)}`,
-        lineAnchor: "bottom",
-        fontWeight: "bold",
-        dy: -5
-      }),
-      // Steps
-      Plot.ruleY(
-        g_segment_data.concat([
-          {
-            volume_compound_pre:
-              g_segment_data.slice(-1)[0].volume_compound_post
-          }
-        ]),
-        {
-          x1: (d, i) => x_domain[i],
-          x2: (d, i) => x_domain[i + 1],
-          y: "volume_compound_pre",
-          strokeDasharray: "4,2"
-        }
-      ),
-      Plot.ruleY(
-        g_segment_data.concat([
-          {
-            segment_compound_pre:
-              g_segment_data.slice(-1)[0].segment_compound_post
-          }
-        ]),
-        {
-          x1: (d, i) => x_domain.slice(-(g_segment_data.length + 2))[i],
-          x2: (d, i) => x_domain.slice(-(g_segment_data.length + 2))[i + 1],
-          y: "segment_compound_pre",
-          strokeDasharray: "4,2"
-        }
-      )
-    ]
-  });
-}
-
-function calculateMixAdjustData(translated_data, extra) {
-  const numerator = extra.measures[2].name;
-  const denominator = extra.measures[1].name;
-  // Data manipulations
-  const cdata = translated_data
-    .map((row) => ({
-      ...row,
-      category:
-        (row.project_normalized == extra.selected_game &&
-          row.period == "This Period" &&
-          "main") ||
-        (extra.selected_ref == row.project_normalized && "ref")
-    }))
-    .filter((f) => ["main", "ref"].includes(f.category));
-
-  const data = cdata.map((row) => ({
-    ...row
-  }));
-
-  const whole_data = {
-    n_main: d3.sum(
-      cdata.filter((f) => f.category == "main"),
-      (d) => d[numerator]
-    ),
-    d_main: d3.sum(
-      cdata.filter((f) => f.category == "main"),
-      (d) => d[denominator]
-    ),
-    n_ref: d3.sum(
-      cdata.filter((f) => f.category == "ref"),
-      (d) => d[numerator]
-    ),
-    d_ref: d3.sum(
-      cdata.filter((f) => f.category == "ref"),
-      (d) => d[denominator]
-    )
-  };
-
-  const segment_data = extra.dimensions[2].keys.map((s) => {
-    const main_data = cdata.filter(
-      (f) => f.category == "main" && f[extra.dimensions[2].name] == s
-    );
-    const ref_data = cdata.filter(
-      (f) => f.category == "ref" && f[extra.dimensions[2].name] == s
-    );
-
-    const base_0 = {
-      segment: s,
-      d_main: d3.sum(main_data, (d) => d[denominator]),
-      n_main: d3.sum(main_data, (d) => d[numerator]),
-      d_ref: d3.sum(ref_data, (d) => d[denominator]),
-      n_ref: d3.sum(ref_data, (d) => d[numerator])
-      // ref_data,
-      // main_data,
-      // whole_data
-    };
-
-    const base_1 = {
-      ...base_0,
-      prop_main: base_0.d_main / whole_data.d_main,
-      prop_ref: base_0.d_ref / whole_data.d_ref,
-      measure_main: base_0.n_main / base_0.d_main,
-      measure_ref: base_0.n_ref / base_0.d_ref
-    };
-
-    const base_2 = {
-      ...base_1,
-      volume_delta: base_1.prop_main - base_1.prop_ref,
-      measure_delta: base_1.measure_main - base_1.measure_ref
-    };
-
-    const base_3 = {
-      ...base_2,
-      volume_effect: base_2.volume_delta * base_2.measure_main,
-      segment_effect: base_2.measure_delta * base_2.prop_ref
-    };
-
-    return base_3;
-  });
-
-  const mix_adjusted_whole = {
-    ...whole_data,
-    n_mixadjusted: d3.sum(segment_data, (d) => d.n_ref * d.prop_main),
-    d_mixadjusted: d3.sum(segment_data, (d) => d.d_ref * d.prop_main),
-    rr_mixadjusted_compounded:
-      whole_data.n_ref / whole_data.d_ref +
-      d3.sum(segment_data, (d) => d.volume_effect)
-  };
-
-  const g_segment_data = segment_data.map((d, i) => ({
-    ...d,
-    volume_compound_pre: d3.cumsum([
-      mix_adjusted_whole.n_ref / mix_adjusted_whole.d_ref,
-      ...segment_data.map((cs) => cs.volume_effect)
-    ])[i],
-    volume_compound_post: d3.cumsum([
-      mix_adjusted_whole.n_ref / mix_adjusted_whole.d_ref,
-      ...segment_data.map((cs) => cs.volume_effect)
-    ])[i + 1],
-    segment_compound_pre: d3.cumsum([
-      //mix_adjusted_whole.n_ref / mix_adjusted_whole.d_ref,
-      mix_adjusted_whole.rr_mixadjusted_compounded,
-      ...segment_data.map((cs) => cs.segment_effect)
-    ])[i],
-    segment_compound_post: d3.cumsum([
-      //mix_adjusted_whole.n_ref / mix_adjusted_whole.d_ref,
-      mix_adjusted_whole.rr_mixadjusted_compounded,
-      ...segment_data.map((cs) => cs.segment_effect)
-    ])[i + 1]
-  }));
-  return [g_segment_data, mix_adjusted_whole];
 }
 
 const get_options = function () {
@@ -829,7 +557,8 @@ const get_options = function () {
           label: "Type",
           display: "select",
           values: [
-              {'Radio': 'radio'},
+            {'Radio': 'radio'},
+            {'Checklist': 'checklist'},
           ],
           display_size: 'normal',
           default: 'radio',
@@ -955,7 +684,7 @@ const vis : VisualizationDefinition = {
 
             // graph_node.node().append(addTooltips(Plot.plot(plot_arguments),tooltip_options));// Finally update the state with our new data
             this.chart = ReactDOM.render(
-              <TestComponent 
+              <RenderComponent 
                   chartConfig={chart_config}
                   params={input_parameters}
               />,
