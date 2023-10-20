@@ -69,10 +69,19 @@ function buildChart({
           const mark1 = extra.measures.find(f => f.name == params['mark1']);
           const mark1_high = extra.measures.find(f => f.name == params['mark1_high']);
           const mark1_low = extra.measures.find(f => f.name == params['mark1_low']);
+          const show_highlow_labels = params['uncertainty_values'];
+
           const mark2 = extra.measures.find(f => f.name == params['mark2']);
           const mark2_type = params['mark2_type'];
 
           const main_mark = mark1 || mark2;
+
+          const mark_numformat = (params['mark_format'] == 'default' && (
+                                            main_mark.d3_value_format
+                                            || '.2f')
+                                 )
+                                 || params['mark_format'];
+          const mark_numformatter = d3.format(mark_numformat);
 
           const fontSize = 12;
 
@@ -144,14 +153,15 @@ function buildChart({
                 Plot.tip(data, Plot.pointerX({
                     x: x_axis.name,
                     y: main_mark.name,
+                    textOverflow: 'ellipsis-middle',
                     ...(color && {stroke: color.name}),
                     channels: 
                         {
 
-                            ...(mark1 && {[mark1.label]: d => d3.format(main_mark.d3_value_format)(d[mark1.name])}),
-                            ...(mark2 && {[mark2.label]: d => d3.format(main_mark.d3_value_format)(d[mark2.name])}),
-                            ...(mark1_high && {[mark1_high.label]: d => d3.format(main_mark.d3_value_format)(d[mark1_high.name])}),
-                            ...(mark1_low && {[mark1_low.label]: d => d3.format(main_mark.d3_value_format)(d[mark1_low.name])}),
+                            ...(mark1 && {[mark1.label]: d => mark_numformatter(d[mark1.name])}),
+                            ...(mark2 && {[mark2.label]: d => mark_numformatter(d[mark2.name])}),
+                            ...(mark1_high && {[mark1_high.label]: d => mark_numformatter(d[mark1_high.name])}),
+                            ...(mark1_low && {[mark1_low.label]: d => mark_numformatter(d[mark1_low.name])}),
                         }
                 }))
             ]
@@ -159,7 +169,6 @@ function buildChart({
             const bar_marks_params = {
                 // groups_domain: Array.from(d3.group(data, d => d.abgroup).keys())
                 backg_opacity: 0.3,
-                num_format: main_mark.d3_value_format, 
                 label_hor_offset: 2, 
                 label_ver_offset: 5, 
                 label_fontsize: 10,
@@ -177,19 +186,21 @@ function buildChart({
                     rx: bar_marks_params.bar_rx,
                     ...(color && {fill: color.name}),
                 }),
-                Plot.barY(data,{
-                    filter: f => color,
-                    x: x_axis.name,
-                    y: mark1.name,
-                    rx: bar_marks_params.bar_rx,
-                    strokeWidth: bar_marks_params.borderWidth,
-                    ...(color && {stroke: color.name}),
-                }),
+                ...(color ? [
+                    Plot.barY(data,{
+                        x: x_axis.name,
+                        y: mark1.name,
+                        rx: bar_marks_params.bar_rx,
+                        strokeWidth: bar_marks_params.borderWidth,
+                        ...(color && {stroke: color.name}),
+                    })
+                    ] : []
+                ),
                 Plot.text(data,{ // Label when it's >= 0
                     filter: d => d[mark1.name] >= 0, 
                     x: x_axis.name,
                     y: mark1.name,
-                    text: d => `${d3.format(bar_marks_params.num_format)(d[mark1.name])}`, 
+                    text: d => `${mark_numformatter(d[mark1.name])}`, 
                     lineAnchor: 'bottom', 
                     textAnchor: 'end', 
                     fontWeight: 'bold', 
@@ -202,8 +213,8 @@ function buildChart({
                     filter: d => d[mark1.name] < 0, 
                     x: x_axis.name,
                     y: mark1.name,
-                    text: d => `${d3.format(bar_marks_params.num_format)(d[mark1.name])}`, 
-                    lineAnchor: 'bottom', 
+                    text: d => `${mark_numformatter(d[mark1.name])}`, 
+                    lineAnchor: 'top', 
                     textAnchor: 'end', 
                     fontWeight: 'bold', 
                     fontSize: bar_marks_params.label_fontsize,
@@ -218,17 +229,19 @@ function buildChart({
                     y: mark1_high.name,
                     ...(color && {stroke: bar_marks_params.unc_tick_color}),
                 }),
-                Plot.text(data,{
-                    x: x_axis.name,
-                    y: mark1_high.name,
-                    text: d => `${d3.format(bar_marks_params.num_format)(d[mark1_high.name])}`, 
-                    lineAnchor: 'bottom', 
-                    textAnchor: 'start', 
-                    fontSize: bar_marks_params.label_fontsize,
-                    dx: bar_marks_params.label_hor_offset, 
-                    dy: - bar_marks_params.label_ver_offset, 
-                    ...(color && {fill: bar_marks_params.unc_tick_color}),
-                })
+                ...(show_highlow_labels ? [
+                    Plot.text(data,{
+                        x: x_axis.name,
+                        y: mark1_high.name,
+                        text: d => `${mark_numformatter(d[mark1_high.name])}`, 
+                        lineAnchor: 'bottom', 
+                        textAnchor: 'start', 
+                        fontSize: bar_marks_params.label_fontsize,
+                        dx: bar_marks_params.label_hor_offset, 
+                        dy: - bar_marks_params.label_ver_offset, 
+                        ...(color && {fill: bar_marks_params.unc_tick_color}),
+                    })] : []
+                )
             ]),
             ...(!(mark1_low) ? [] : [
                 Plot.tickY(data,{
@@ -236,24 +249,25 @@ function buildChart({
                     y: mark1_low.name,
                     ...(color && {stroke: bar_marks_params.unc_tick_color}),
                 }),
-                Plot.text(data,{
-                    x: x_axis.name,
-                    y: mark1_low.name,
-                    text: d => `${d3.format(bar_marks_params.num_format)(d[mark1_low.name])}`, 
-                    lineAnchor: 'top', 
-                    textAnchor: 'start', 
-                    fontSize: bar_marks_params.label_fontsize,
-                    dx: bar_marks_params.label_hor_offset, 
-                    dy: bar_marks_params.label_ver_offset, 
-                    ...(color && {fill: bar_marks_params.unc_tick_color}),
-                })
+                ...(show_highlow_labels ? [
+                    Plot.text(data,{
+                        x: x_axis.name,
+                        y: mark1_low.name,
+                        text: d => `${mark_numformatter(d[mark1_low.name])}`, 
+                        lineAnchor: 'top', 
+                        textAnchor: 'start', 
+                        fontSize: bar_marks_params.label_fontsize,
+                        dx: bar_marks_params.label_hor_offset, 
+                        dy: bar_marks_params.label_ver_offset, 
+                        ...(color && {fill: bar_marks_params.unc_tick_color}),
+                    })
+                ] : [])
             ]),
             ...(!(mark1_high && mark1_low) ? [] : [
                 Plot.ruleX(data,{
                     x: x_axis.name,
                     y1: mark1_high.name,
                     y2: mark1_low.name,
-                    opacity: 0.3,
                     ...(color && {stroke: bar_marks_params.unc_tick_color}),
                 })
             ]),
@@ -271,13 +285,14 @@ function buildChart({
                 x: x_axis.name,
                 y: main_mark.name,
                 ...(color && {stroke: color.name}),
+                textOverflow: 'ellipsis-middle',
                 channels: 
                     {
 
-                        ...(mark1 && {[mark1.label]: d => d3.format(main_mark.d3_value_format)(d[mark1.name])}),
-                        ...(mark2 && {[mark2.label]: d => d3.format(main_mark.d3_value_format)(d[mark2.name])}),
-                        ...(mark1_high && {[mark1_high.label]: d => d3.format(main_mark.d3_value_format)(d[mark1_high.name])}),
-                        ...(mark1_low && {[mark1_low.label]: d => d3.format(main_mark.d3_value_format)(d[mark1_low.name])}),
+                        ...(mark1 && {[mark1.label]: d => mark_numformatter(d[mark1.name])}),
+                        ...(mark2 && {[mark2.label]: d => mark_numformatter(d[mark2.name])}),
+                        ...(mark1_high && {[mark1_high.label]: d => mark_numformatter(d[mark1_high.name])}),
+                        ...(mark1_low && {[mark1_low.label]: d => mark_numformatter(d[mark1_low.name])}),
                     }
             }))
           ]
@@ -288,7 +303,7 @@ function buildChart({
             height: height,
             width: width,
             inset:10, 
-            marginLeft: autoMargin(data, d => d3.format(main_mark.d3_value_format)(d[main_mark.name]),15,fontSize),
+            marginLeft: autoMargin(data, d => mark_numformatter(d[main_mark.name]),15,fontSize),
             marginRight: (facet_y && charttype == 'line') ? autoMargin(data, d => d[facet_y.name],10,fontSize) : 15,
             marginBottom:(facet_x && charttype == 'bar') ? 50 : 30,
             marginTop: (
@@ -312,7 +327,7 @@ function buildChart({
                     })
             },
             y: {
-                tickFormat: main_mark.d3_value_format,
+                tickFormat: mark_numformat,
                 label: main_mark.label,
                 grid: true,
                 nice: true,
@@ -450,7 +465,55 @@ const get_options = function () {
         label: "Mark #1",
         display: "select",
         values: [],
-        display_size: 'normal',
+        display_size: 'half',
+        default: 'abs',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['mark_format'] = {
+        type: "string",
+        section:"Main",
+        label: "Number Format",
+        display: "select",
+        values: [
+            {'Default':'default'},
+            {'$0.':'$,.0f'},
+            {'$0.0':'$,.1f'},
+            {'$0.00':'$,.2f'},
+            {'$0.000':'$,.3f'},
+            {'%0.':'.0%'},
+            {'%0.0':'.1%'},
+            {'%0.00':'.2%'},
+            {'%0.000':'.3%'},
+            {'0.':',.0f'},
+            {'0.0':',.1f'},
+            {'0.00':',.2f'},
+            {'0.000':',.3f'},
+            {'1 sig. digits':'.1s'},
+            {'2 sig. digits':'.2s'},
+            {'3 sig. digits':'.3s'},
+            {'$ 1 sig.':'$.1s'},
+            {'$ 2 sig.':'$.2s'},
+            {'$ 3 sig.':'$.3s'},
+        ],
+        display_size: 'half',
+        default: 'default',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['mark1_low'] = {
+        type: "string",
+        section:"Main",
+        label: "Mark #1 - Low",
+        display: "select",
+        values: [],
+        display_size: 'half',
         default: 'abs',
         hidden: false,
         order: n_config
@@ -472,14 +535,13 @@ const get_options = function () {
 
     n_config++;
 
-    vizOptions['mark1_low'] = {
-        type: "string",
+    vizOptions['uncertainty_values'] = {
+        type: "boolean",
         section:"Main",
-        label: "Mark #1 - Low",
+        label: "Show High/Low Values?",
         display: "select",
-        values: [],
-        display_size: 'half',
-        default: 'abs',
+        display_size: 'normal',
+        default: true,
         hidden: false,
         order: n_config
     }
@@ -681,13 +743,16 @@ const options_update = function(config, vizObject,raw_data) {
     // Deactivating unused options depending on type
     const charttype = config['charttype'];
 
-    if (charttype == 'bar') {
+    myOptions['mark2']['hidden'] = false;
+    myOptions['mark2_type']['hidden'] = false;
+    myOptions['uncertainty_values']['hidden'] = false;
+
+    if (['bar'].includes(charttype)) {
         myOptions['mark2']['hidden'] = true;
         myOptions['mark2_type']['hidden'] = true;
-
-    } else {
-        myOptions['mark2']['hidden'] = false;
-        myOptions['mark2_type']['hidden'] = false;
+    }
+    if (['line'].includes(charttype)) {
+        myOptions['uncertainty_values']['hidden'] = true;
     }
 
     vizObject.trigger('registerOptions', myOptions);
