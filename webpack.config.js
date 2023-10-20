@@ -7,7 +7,8 @@ module.exports = {
     portfolioPeriodTable: "./src/visualizations/portfolio-period-table.tsx",
     observablePlotPrototyper: "./src/visualizations/observableplot_prototyper.tsx",
     mixAdjustedRR: "./src/visualizations/mixadjust_rr.tsx",
-    observablePlotPrototyperLiveParams: "./src/visualizations/observableplot_prototyper_liveparams.tsx"
+    observablePlotPrototyperLiveParams: "./src/visualizations/observableplot_prototyper_liveparams.tsx",
+    uncertaintyViz: "./src/visualizations/uncertainty-viz.tsx"
   },
   output: {
     filename: "[name].js",
