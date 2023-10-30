@@ -305,7 +305,7 @@ function buildChart({
             inset:10, 
             marginLeft: autoMargin(data, d => mark_numformatter(d[main_mark.name]),15,fontSize),
             marginRight: (facet_y && charttype == 'line') ? autoMargin(data, d => d[facet_y.name],10,fontSize) : 15,
-            marginBottom:(facet_x && charttype == 'bar') ? 50 : 30,
+            marginBottom:(facet_x && charttype == 'bar') ? 50 : 50,
             marginTop: (
                         (facet_x && charttype == 'line')
                         ||
