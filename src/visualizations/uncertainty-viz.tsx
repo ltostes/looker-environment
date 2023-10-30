@@ -63,6 +63,8 @@ function buildChart({
           const charttype = params['charttype'];
           const x_axis = [...extra.dimensions, ...extra.pivots].find(f => f.name == params['x_axis']);
           const color = [...extra.dimensions, ...extra.pivots].find(f => f.name == params['color']);
+          const fixed_color = d3['schemeTableau10'].find(f => f == params['color']);
+
           const facet_x = [...extra.dimensions, ...extra.pivots].find(f => f.name == params['facet_x']);
           const facet_y = [...extra.dimensions, ...extra.pivots].find(f => f.name == params['facet_y']);
 
@@ -95,6 +97,7 @@ function buildChart({
                         x: x_axis.name,
                         y: mark1.name,
                         ...(color && {stroke: color.name}),
+                        ...(fixed_color && {stroke: fixed_color}),
                         ...(mark2 && {strokeWidht: 1}),
                     })
                 ]),
@@ -105,6 +108,7 @@ function buildChart({
                         y2: mark1_low.name,
                         opacity: 0.3,
                         ...(color && {fill: color.name}),
+                        ...(fixed_color && {fill: fixed_color}),
                     })
                 ]),
                 ...(!mark2 ? [] : [
@@ -114,6 +118,7 @@ function buildChart({
                                 y: mark2.name,
                                 strokeWidth: 3,
                                 ...(color && {stroke: color.name}),
+                                ...(fixed_color && {stroke: fixed_color}),
                             })
                         ]),
                     ...(!(mark2_type == 'dot') ? [] : [
@@ -121,6 +126,7 @@ function buildChart({
                             x: x_axis.name,
                             y: mark2.name,
                             ...(color && {fill: color.name}),
+                            ...(fixed_color && {fill: fixed_color}),
                             r: 4, 
                         }),
                     ]),
@@ -155,6 +161,7 @@ function buildChart({
                     y: main_mark.name,
                     textOverflow: 'ellipsis-middle',
                     ...(color && {stroke: color.name}),
+                    ...(fixed_color && {stroke: fixed_color}),
                     channels: 
                         {
 
@@ -185,6 +192,7 @@ function buildChart({
                     opacity: bar_marks_params.backg_opacity, 
                     rx: bar_marks_params.bar_rx,
                     ...(color && {fill: color.name}),
+                    ...(fixed_color && {fill: fixed_color}),
                 }),
                 ...(color ? [
                     Plot.barY(data,{
@@ -193,6 +201,7 @@ function buildChart({
                         rx: bar_marks_params.bar_rx,
                         strokeWidth: bar_marks_params.borderWidth,
                         ...(color && {stroke: color.name}),
+                        ...(fixed_color && {stroke: fixed_color}),
                     })
                     ] : []
                 ),
@@ -208,6 +217,7 @@ function buildChart({
                     dx: - bar_marks_params.label_hor_offset, 
                     dy: - bar_marks_params.label_ver_offset, 
                     ...(color && {fill: color.name}),
+                    ...(fixed_color && {fill: fixed_color}),
                 }),
                 Plot.text(data,{ // Label when it's < 0
                     filter: d => d[mark1.name] < 0, 
@@ -221,6 +231,7 @@ function buildChart({
                     dx: - bar_marks_params.label_hor_offset, 
                     dy: bar_marks_params.label_ver_offset, 
                     ...(color && {fill: color.name}),
+                    ...(fixed_color && {fill: fixed_color}),
                 })
             ]),
             ...(!(mark1_high) ? [] : [
@@ -228,6 +239,7 @@ function buildChart({
                     x: x_axis.name,
                     y: mark1_high.name,
                     ...(color && {stroke: bar_marks_params.unc_tick_color}),
+                    ...(fixed_color && {stroke: fixed_color}),
                 }),
                 ...(show_highlow_labels ? [
                     Plot.text(data,{
@@ -240,6 +252,7 @@ function buildChart({
                         dx: bar_marks_params.label_hor_offset, 
                         dy: - bar_marks_params.label_ver_offset, 
                         ...(color && {fill: bar_marks_params.unc_tick_color}),
+                        ...(fixed_color && {fill: fixed_color}),
                     })] : []
                 )
             ]),
@@ -248,6 +261,7 @@ function buildChart({
                     x: x_axis.name,
                     y: mark1_low.name,
                     ...(color && {stroke: bar_marks_params.unc_tick_color}),
+                    ...(fixed_color && {stroke: fixed_color}),
                 }),
                 ...(show_highlow_labels ? [
                     Plot.text(data,{
@@ -260,6 +274,7 @@ function buildChart({
                         dx: bar_marks_params.label_hor_offset, 
                         dy: bar_marks_params.label_ver_offset, 
                         ...(color && {fill: bar_marks_params.unc_tick_color}),
+                        ...(fixed_color && {fill: fixed_color}),
                     })
                 ] : [])
             ]),
@@ -269,6 +284,7 @@ function buildChart({
                     y1: mark1_high.name,
                     y2: mark1_low.name,
                     ...(color && {stroke: bar_marks_params.unc_tick_color}),
+                    ...(fixed_color && {stroke: fixed_color}),
                 })
             ]),
             ...(!mark2 ? [] : [
@@ -285,6 +301,7 @@ function buildChart({
                 x: x_axis.name,
                 y: main_mark.name,
                 ...(color && {stroke: color.name}),
+                ...(fixed_color && {stroke: fixed_color}),
                 textOverflow: 'ellipsis-middle',
                 channels: 
                     {
@@ -719,7 +736,7 @@ const options_update = function(config, vizObject,raw_data) {
         ...((raw_data.measures.length == 0) ? [] : raw_data.measures.map(list_as_option)),
     ].filter(f => !(f['Released Versions']));
 
-    const dim_options = ['x_axis', 'color','facet_x','facet_y'];
+    const dim_options = ['x_axis', 'facet_x','facet_y'];
 
     dim_options.forEach(option => {
         myOptions[option] = {
@@ -730,6 +747,31 @@ const options_update = function(config, vizObject,raw_data) {
                     ]
         }
     })
+
+    // Special case for colors: fixed color options
+    const fixed_color_options = [
+        {'-- Fixed color options below --':'fixed'},
+        {'Blue': d3['schemeTableau10'][0]},
+        {'Orange': d3['schemeTableau10'][1]},
+        {'Red': d3['schemeTableau10'][2]},
+        {'Teal': d3['schemeTableau10'][3]},
+        {'Green': d3['schemeTableau10'][4]},
+        {'Yellow': d3['schemeTableau10'][5]},
+        {'Purple': d3['schemeTableau10'][6]},
+        {'Pink': d3['schemeTableau10'][7]},
+        {'Brown': d3['schemeTableau10'][8]},
+        {'Grey': d3['schemeTableau10'][9]},
+    ]
+
+    myOptions['color'] = {
+        ...vizObject.options['color'],
+        values: [
+                    ...[{'None':''}],
+                    ...possible_dimensions,
+                    ...fixed_color_options
+                ]
+    }
+
     const measure_options = ['mark1', 'mark1_high', 'mark1_low', 'mark2']
 
 
