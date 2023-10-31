@@ -143,14 +143,14 @@ function buildChart({
                             })
                         ]),
                     ...(!(mark2_type == 'dot') ? [] : [
-                        Plot.dot(data,{
-                            x: x_axis.name,
-                            y: mark2.name,
-                            ...(color && {fill: color.name}),
-                            ...(fixed_color && {fill: fixed_color}),
-                            r: 4, 
-                        }),
-                    ]),
+                            Plot.dot(data,{
+                                x: x_axis.name,
+                                y: mark2.name,
+                                ...(color && {fill: color.name}),
+                                ...(fixed_color && {fill: fixed_color}),
+                                r: 4, 
+                            }),
+                        ]), 
                     ...(!(mark2_type == 'area') ? [] : [
                             Plot.areaY(data,{
                                 x: x_axis.name,
