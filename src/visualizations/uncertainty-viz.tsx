@@ -98,7 +98,7 @@ function buildChart({
                         y: mark1.name,
                         ...(color && {stroke: color.name}),
                         ...(fixed_color && {stroke: fixed_color}),
-                        ...(mark2 && {strokeWidht: 1}),
+                        ...(mark2 && {strokeWidth: 1}),
                     })
                 ]),
                 ...(!(mark1_high && mark1_low) ? [] : [
@@ -322,7 +322,7 @@ function buildChart({
             inset:10, 
             marginLeft: autoMargin(data, d => mark_numformatter(d[main_mark.name]),15,fontSize),
             marginRight: (facet_y && charttype == 'line') ? autoMargin(data, d => d[facet_y.name],10,fontSize) : 15,
-            marginBottom:(facet_x && charttype == 'bar') ? 50 : 50,
+            marginBottom: (facet_x && charttype == 'bar') ? 50 : 50,
             marginTop: (
                         (facet_x && charttype == 'line')
                         ||
