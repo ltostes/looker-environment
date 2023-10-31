@@ -151,6 +151,22 @@ function buildChart({
                             r: 4, 
                         }),
                     ]),
+                    ...(!(mark2_type == 'area') ? [] : [
+                            Plot.areaY(data,{
+                                x: x_axis.name,
+                                y: mark2.name,
+                                opacity: 0.3,
+                                ...(color && {fill: color.name}),
+                                ...(fixed_color && {fill: fixed_color}),
+                            }),
+                            Plot.line(data,{
+                                x: x_axis.name,
+                                y: mark2.name,
+                                strokeWidth: 2,
+                                ...(color && {stroke: color.name}),
+                                ...(fixed_color && {stroke: fixed_color}),
+                            })
+                        ]),
                 ]),
                 ...(!releasedates ? [] : [
                     Plot.ruleX(data, Plot.groupX({x:'first'},{
@@ -580,6 +596,7 @@ const get_options = function () {
         values: [
             {'Thick Line':'thick'},
             {'Dots':'dot'},
+            {'Area':'area'},
         ],
         display_size: 'half',
         default: 'thick',
