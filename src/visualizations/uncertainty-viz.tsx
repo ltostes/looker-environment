@@ -764,7 +764,7 @@ const options_update = function(config, vizObject,raw_data) {
         {'Blue': d3['schemeTableau10'][0]},
         {'Orange': d3['schemeTableau10'][1]},
         {'Red': d3['schemeTableau10'][2]},
-        {'Teal': d3['schemeTableau10'][3]},
+        {'Teal (default)': d3['schemeTableau10'][3]},
         {'Green': d3['schemeTableau10'][4]},
         {'Yellow': d3['schemeTableau10'][5]},
         {'Purple': d3['schemeTableau10'][6]},
