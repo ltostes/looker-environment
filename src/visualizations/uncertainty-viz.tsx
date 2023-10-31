@@ -87,6 +87,24 @@ function buildChart({
 
           const fontSize = 12;
 
+          // Labels
+
+          function label_fun(mark_name, mark_obj) : string {
+            return  ((params[mark_name + '_customlabel'] > '') && params[mark_name + '_customlabel'])
+                    || (mark_obj && mark_obj.label.trim())
+                    || ('None')
+          }
+
+          const mark1_label = label_fun('mark1',mark1);
+          const mark2_label = label_fun('mark2',mark2);
+          const mark1_low_label = label_fun('mark1_low',mark1_low);
+          const mark1_high_label = label_fun('mark1_high',mark1_high);
+
+          const x_axis_label = label_fun('x_axis',x_axis);
+          const color_label = label_fun('color', color);
+          const facet_x_label = label_fun('facet_x', facet_x);
+          const facet_y_label = label_fun('facet_y', facet_y);
+
           // Version release dates (if present)
           const releasedates = extra.measures.find(f => f.name == 'release_version');
 
@@ -102,11 +120,10 @@ function buildChart({
                 channels: 
                     {
  
-                        ...(mark1 && {[mark1.label.trim()]: d => mark_numformatter(d[mark1.name])}),
-                        ...(mark2 && {[mark2.label.trim()]: d => mark_numformatter(d[mark2.name])}),
-                        ...(mark1_high && {[mark1_high.label.trim()]: d => mark_numformatter(d[mark1_high.name])}),
-                        ...(mark1_low && {[mark1_low.label.trim()]: d => mark_numformatter(d[mark1_low.name])}),
-                        y: null
+                        ...(mark1 && {[mark1_label]: d => mark_numformatter(d[mark1.name])}),
+                        ...(mark2 && {[mark2_label]: d => mark_numformatter(d[mark2.name])}),
+                        ...(mark1_high && {[mark1_high_label]: d => mark_numformatter(d[mark1_high.name])}),
+                        ...(mark1_low && {[mark1_low_label]: d => mark_numformatter(d[mark1_low.name])})
                     }
             }))
           ]
@@ -341,7 +358,7 @@ function buildChart({
             },
             // Axes
             x: {
-                label: x_axis.label.trim(),
+                label: x_axis_label,
                 labelOffset: 40,
                 ...(charttype == 'line' && {
                         ...(x_axis.type.includes('_date') && {type: 'utc' as Plot.ScaleType, ticks: 'week'}),
@@ -353,7 +370,7 @@ function buildChart({
             },
             y: {
                 tickFormat: mark_numformat,
-                label: main_mark.label.trim(),
+                label: mark1_label == 'None' ? mark2_label : mark1_label,
                 grid: true,
                 nice: true,
                 zero: true
@@ -362,7 +379,7 @@ function buildChart({
                 color: {
                     legend: true,
                     type: 'categorical' as Plot.ScaleType,
-                    label: color.label,
+                    label: color_label,
                     className: 'plotColorLegend'
                 },
             }),
@@ -373,13 +390,13 @@ function buildChart({
             },
             ...(facet_x && {
                 fx: {
-                    label: facet_x.label,
+                    label: facet_x_label,
                     labelOffset: 35
                 }
             }),
             ...(facet_y && {
                 fy: {
-                    label: facet_y.label,
+                    label: facet_y_label,
                     labelOffset: 35
                 }
             }),
@@ -399,7 +416,7 @@ function buildChart({
                                 d3.select(chart)
                                 .select('.plotColorLegend-swatches')
                                 .insert('span',":first-child").classed('plotColorLegend-swatch',true)
-                                .text(color.label)
+                                .text(color_label)
                                 .style("font-size",`${fontSize}px`)
                                );
           
@@ -417,7 +434,7 @@ const get_options = function () {
 
     vizOptions['charttype'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "Type",
         display: "select",
         values: [
@@ -435,7 +452,7 @@ const get_options = function () {
 
     vizOptions['breakdowns_label'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "-- Breakdowns --",
         display: "divider", // This string is arbitrary it's just choosing an option that doesn't exist
         display_size: 'normal',
@@ -447,7 +464,7 @@ const get_options = function () {
 
     vizOptions['x_axis'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "X Axis",
         display: "select",
         values: [],
@@ -461,7 +478,7 @@ const get_options = function () {
 
     vizOptions['color'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "Color",
         display: "select",
         values: [],
@@ -475,7 +492,7 @@ const get_options = function () {
 
     vizOptions['marks_label'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "-- Marks --",
         display: "divider", // This string is arbitrary it's just choosing an option that doesn't exist
         display_size: 'normal',
@@ -487,7 +504,7 @@ const get_options = function () {
 
     vizOptions['mark1'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "Mark #1",
         display: "select",
         values: [],
@@ -501,7 +518,7 @@ const get_options = function () {
 
     vizOptions['mark_format'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "Number Format",
         display: "select",
         values: [
@@ -535,7 +552,7 @@ const get_options = function () {
 
     vizOptions['mark1_low'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "Mark #1 - Low",
         display: "select",
         values: [],
@@ -549,7 +566,7 @@ const get_options = function () {
 
     vizOptions['mark1_high'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "Mark #1 - High",
         display: "select",
         values: [],
@@ -563,7 +580,7 @@ const get_options = function () {
 
     vizOptions['uncertainty_values'] = {
         type: "boolean",
-        section:"Main",
+        section: "1. Main",
         label: "Show High/Low Values?",
         display: "select",
         display_size: 'normal',
@@ -576,7 +593,7 @@ const get_options = function () {
 
     vizOptions['mark2'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "Mark #2",
         display: "select",
         values: [],
@@ -590,7 +607,7 @@ const get_options = function () {
 
     vizOptions['mark2_type'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "Type (Mark #2)",
         display: "select",
         values: [
@@ -608,7 +625,7 @@ const get_options = function () {
 
     vizOptions['facets_label'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "-- Facets --",
         display: "divider", // This string is arbitrary it's just choosing an option that doesn't exist
         display_size: 'normal',
@@ -620,7 +637,7 @@ const get_options = function () {
 
     vizOptions['facet_x'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "Horizontal",
         display: "select",
         values: [],
@@ -634,12 +651,130 @@ const get_options = function () {
 
     vizOptions['facet_y'] = {
         type: "string",
-        section:"Main",
+        section: "1. Main",
         label: "Vertical",
         display: "select",
         values: [],
         display_size: 'half',
         default: '',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    // Extra Options
+
+    vizOptions['customlabels_label'] = {
+        type: "string",
+        section:"2. Extra",
+        label: "-- Custom Labels --",
+        display: "divider", // This string is arbitrary it's just choosing an option that doesn't exist
+        display_size: 'normal',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['x_axis_customlabel'] = {
+        type: "string",
+        section:"2. Extra",
+        label: "X",
+        display: "text",
+        default: "",
+        display_size: 'normal',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['color_customlabel'] = {
+        type: "string",
+        section:"2. Extra",
+        label: "Color",
+        display: "text",
+        default: "",
+        display_size: 'normal',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['mark1_customlabel'] = {
+        type: "string",
+        section:"2. Extra",
+        label: "Mark 1",
+        display: "text",
+        default: "",
+        display_size: 'normal',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['mark1_low_customlabel'] = {
+        type: "string",
+        section:"2. Extra",
+        label: "Mark 1 - Low",
+        display: "text",
+        default: "",
+        display_size: 'normal',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['mark1_high_customlabel'] = {
+        type: "string",
+        section:"2. Extra",
+        label: "Mark 1 - High",
+        display: "text",
+        default: "",
+        display_size: 'normal',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['mark2_customlabel'] = {
+        type: "string",
+        section:"2. Extra",
+        label: "Mark 2",
+        display: "text",
+        default: "",
+        display_size: 'normal',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['facet_x_customlabel'] = {
+        type: "string",
+        section:"2. Extra",
+        label: "Facet X",
+        display: "text",
+        default: "",
+        display_size: 'normal',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['facet_y_customlabel'] = {
+        type: "string",
+        section: "2. Extra",
+        label: "Facet Y",
+        display: "text",
+        default: "",
+        display_size: 'normal',
         hidden: false,
         order: n_config
     }
