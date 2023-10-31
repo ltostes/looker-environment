@@ -90,6 +90,27 @@ function buildChart({
           // Version release dates (if present)
           const releasedates = extra.measures.find(f => f.name == 'release_version');
 
+          // Common Marks
+          const common_marks = [
+            // Tip Mark
+            Plot.tip(data, Plot.pointerX({
+                x: x_axis.name,
+                y: main_mark.name,
+                textOverflow: 'ellipsis-middle',
+                ...(color && {stroke: color.name}),
+                ...(fixed_color && {stroke: fixed_color}),
+                channels: 
+                    {
+ 
+                        ...(mark1 && {[mark1.label.trim()]: d => mark_numformatter(d[mark1.name])}),
+                        ...(mark2 && {[mark2.label.trim()]: d => mark_numformatter(d[mark2.name])}),
+                        ...(mark1_high && {[mark1_high.label.trim()]: d => mark_numformatter(d[mark1_high.name])}),
+                        ...(mark1_low && {[mark1_low.label.trim()]: d => mark_numformatter(d[mark1_low.name])}),
+                        y: null
+                    }
+            }))
+          ]
+
           // Marks for Line type
           const line_marks = [
                 ...(!mark1 ? [] : [
@@ -156,21 +177,7 @@ function buildChart({
                     strokeWidth: 0.5, 
                     strokeDasharray: '3,3'
                 })),
-                Plot.tip(data, Plot.pointerX({
-                    x: x_axis.name,
-                    y: main_mark.name,
-                    textOverflow: 'ellipsis-middle',
-                    ...(color && {stroke: color.name}),
-                    ...(fixed_color && {stroke: fixed_color}),
-                    channels: 
-                        {
-
-                            ...(mark1 && {[mark1.label]: d => mark_numformatter(d[mark1.name])}),
-                            ...(mark2 && {[mark2.label]: d => mark_numformatter(d[mark2.name])}),
-                            ...(mark1_high && {[mark1_high.label]: d => mark_numformatter(d[mark1_high.name])}),
-                            ...(mark1_low && {[mark1_low.label]: d => mark_numformatter(d[mark1_low.name])}),
-                        }
-                }))
+                // Common marks (Tip)
             ]
 
             const bar_marks_params = {
@@ -297,21 +304,6 @@ function buildChart({
                 strokeDasharray: '2,2'
             }),
             // Tooltip marks
-            Plot.tip(data, Plot.pointerX({
-                x: x_axis.name,
-                y: main_mark.name,
-                ...(color && {stroke: color.name}),
-                ...(fixed_color && {stroke: fixed_color}),
-                textOverflow: 'ellipsis-middle',
-                channels: 
-                    {
-
-                        ...(mark1 && {[mark1.label]: d => mark_numformatter(d[mark1.name])}),
-                        ...(mark2 && {[mark2.label]: d => mark_numformatter(d[mark2.name])}),
-                        ...(mark1_high && {[mark1_high.label]: d => mark_numformatter(d[mark1_high.name])}),
-                        ...(mark1_low && {[mark1_low.label]: d => mark_numformatter(d[mark1_low.name])}),
-                    }
-            }))
           ]
 
           // Plot object
@@ -333,7 +325,7 @@ function buildChart({
             },
             // Axes
             x: {
-                label: x_axis.label,
+                label: x_axis.label.trim(),
                 labelOffset: 40,
                 ...(charttype == 'line' && {
                         ...(x_axis.type.includes('_date') && {type: 'utc' as Plot.ScaleType, ticks: 'week'}),
@@ -345,7 +337,7 @@ function buildChart({
             },
             y: {
                 tickFormat: mark_numformat,
-                label: main_mark.label,
+                label: main_mark.label.trim(),
                 grid: true,
                 nice: true,
                 zero: true
@@ -380,6 +372,7 @@ function buildChart({
             [
                 ...(charttype == 'line' ? line_marks : [] ),
                 ...(charttype == 'bar' ? bar_marks : [] ),
+                ...common_marks
             ]
           })
 
