@@ -766,7 +766,7 @@ const options_update = function(config, vizObject,raw_data) {
     myOptions['color'] = {
         ...vizObject.options['color'],
         values: [
-                    ...[{'None':''}],
+                    ...[{'None':d3['schemeTableau10'][3]}], // Default as teal
                     ...possible_dimensions,
                     ...fixed_color_options
                 ]
