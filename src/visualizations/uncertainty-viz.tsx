@@ -930,11 +930,11 @@ const options_update = function(config, vizObject,raw_data) {
     })
 
     // Deactivating unused options depending on type
-    const charttype = config['charttype'];
+    Object.keys(vizObject.options).forEach(k => {
+        myOptions[k]['hidden'] = false;
+    })
 
-    myOptions['mark2']['hidden'] = false;
-    myOptions['mark2_type']['hidden'] = false;
-    myOptions['uncertainty_values']['hidden'] = false;
+    const charttype = config['charttype'];
 
     if (['bar'].includes(charttype)) {
         myOptions['mark2']['hidden'] = true;
