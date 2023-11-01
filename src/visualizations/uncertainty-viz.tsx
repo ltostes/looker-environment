@@ -124,7 +124,9 @@ function buildChart({
                         ...(mark2 && {[mark2_label]: d => mark_numformatter(d[mark2.name])}),
                         ...(mark1_high && {[mark1_high_label]: d => mark_numformatter(d[mark1_high.name])}),
                         ...(mark1_low && {[mark1_low_label]: d => mark_numformatter(d[mark1_low.name])})
-                    }
+                    },
+                // A stackY to when there's colored area in mark2
+                ...((color && mark2_type == 'area' && charttype == 'line') && Plot.stackY2({x: x_axis.name,y: main_mark.name,stroke: color.name}))
             }))
           ]
 
@@ -180,7 +182,7 @@ function buildChart({
                                 x: x_axis.name,
                                 y: mark2.name,
                                 strokeWidth: 2,
-                                ...(color && {stroke: color.name}),
+                                ...(color && {...Plot.stackY2({y: mark2.name, x: x_axis.name, stroke: color.name})}),
                                 ...(fixed_color && {stroke: fixed_color}),
                             })
                         ]),
