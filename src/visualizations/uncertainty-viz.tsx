@@ -59,6 +59,19 @@ function buildChart({
           // Filtering data
           const data = data_prefilter.filter(d => !d.filter);
 
+          // Marks
+          const mark1 = extra.measures.find(f => f.name == params['mark1']);
+          const mark1_high = extra.measures.find(f => f.name == params['mark1_high']);
+          const mark1_low = extra.measures.find(f => f.name == params['mark1_low']);
+
+          const mark2 = extra.measures.find(f => f.name == params['mark2']);
+          const mark2_type = params['mark2_type'];
+
+          const mark3 = extra.measures.find(f => f.name == params['mark3']);
+          const mark4 = extra.measures.find(f => f.name == params['mark4']);
+
+          const main_mark = mark1 || mark2;
+
           // Options
           const charttype = params['charttype'];
           const x_axis = [...extra.dimensions, ...extra.pivots].find(f => f.name == params['x_axis']);
@@ -67,16 +80,6 @@ function buildChart({
 
           const facet_x = [...extra.dimensions, ...extra.pivots].find(f => f.name == params['facet_x']);
           const facet_y = [...extra.dimensions, ...extra.pivots].find(f => f.name == params['facet_y']);
-
-          const mark1 = extra.measures.find(f => f.name == params['mark1']);
-          const mark1_high = extra.measures.find(f => f.name == params['mark1_high']);
-          const mark1_low = extra.measures.find(f => f.name == params['mark1_low']);
-          const show_highlow_labels = params['uncertainty_values'];
-
-          const mark2 = extra.measures.find(f => f.name == params['mark2']);
-          const mark2_type = params['mark2_type'];
-
-          const main_mark = mark1 || mark2;
 
           const mark_numformat = (params['mark_format'] == 'default' && (
                                             main_mark.d3_value_format
@@ -88,7 +91,6 @@ function buildChart({
           const fontSize = 12;
 
           // Labels
-
           function label_fun(mark_name, mark_obj) : string {
             return  ((params[mark_name + '_customlabel'] > '') && params[mark_name + '_customlabel'])
                     || (mark_obj && mark_obj.label.trim())
@@ -96,14 +98,30 @@ function buildChart({
           }
 
           const mark1_label = label_fun('mark1',mark1);
-          const mark2_label = label_fun('mark2',mark2);
           const mark1_low_label = label_fun('mark1_low',mark1_low);
           const mark1_high_label = label_fun('mark1_high',mark1_high);
+          const mark2_label = label_fun('mark2',mark2);
+          const mark3_label = label_fun('mark3',mark3);
+          const mark4_label = label_fun('mark4',mark4);
 
           const x_axis_label = label_fun('x_axis',x_axis);
           const color_label = label_fun('color', color);
           const facet_x_label = label_fun('facet_x', facet_x);
           const facet_y_label = label_fun('facet_y', facet_y);
+
+          // Type-specific config
+          const show_highlow_labels = params['uncertainty_values'];
+
+          const stack_2_3_4 = (charttype == 'stacked_area' && mark2_type == 'area' && mark3 && mark4); // Logic to calculate what type of stack it is
+          const stack_2_3   = (charttype == 'stacked_area' && mark2_type == 'area' && mark3 && !stack_2_3_4);
+          const stack_3_4   = (charttype == 'stacked_area' && mark2_type != 'area' && mark3 && mark4);
+          const is_stack = stack_2_3_4 || stack_2_3 || stack_3_4;
+
+          const stack_color_pallete = false
+                        || (stack_2_3_4 && {domain: [mark2_label, mark3_label, mark4_label]})
+                        || (stack_2_3   && {domain: [mark2_label, mark3_label]})
+                        || (stack_3_4   && {domain: [mark3_label, mark4_label]})
+                        || {};
 
           // Version release dates (if present)
           const releasedates = extra.measures.find(f => f.name == 'release_version');
@@ -121,9 +139,11 @@ function buildChart({
                     {
  
                         ...(mark1 && {[mark1_label]: d => mark_numformatter(d[mark1.name])}),
-                        ...(mark2 && {[mark2_label]: d => mark_numformatter(d[mark2.name])}),
                         ...(mark1_high && {[mark1_high_label]: d => mark_numformatter(d[mark1_high.name])}),
-                        ...(mark1_low && {[mark1_low_label]: d => mark_numformatter(d[mark1_low.name])})
+                        ...(mark1_low && {[mark1_low_label]: d => mark_numformatter(d[mark1_low.name])}),
+                        ...(mark2 && {[mark2_label]: d => mark_numformatter(d[mark2.name])}),
+                        ...(mark3 && {[mark3_label]: d => mark_numformatter(d[mark3.name])}),
+                        ...(mark4 && {[mark4_label]: d => mark_numformatter(d[mark4.name])}),
                     },
                 // A stackY to when there's colored area in mark2
                 ...((color && mark2_type == 'area' && charttype == 'line') && Plot.stackY2({x: x_axis.name,y: main_mark.name,stroke: color.name}))
@@ -215,7 +235,7 @@ function buildChart({
                 // Common marks (Tip)
             ]
 
-            const bar_marks_params = {
+          const bar_marks_params = {
                 // groups_domain: Array.from(d3.group(data, d => d.abgroup).keys())
                 backg_opacity: 0.3,
                 label_hor_offset: 2, 
@@ -226,7 +246,7 @@ function buildChart({
                 ...(color && {unc_tick_color: color.name}),
             }
           
-            const bar_marks = [
+          const bar_marks = [
             ...(!mark1 ? [] : [
                 Plot.barY(data,{
                     x: x_axis.name,
@@ -341,6 +361,179 @@ function buildChart({
             // Tooltip marks
           ]
 
+          const stacked_area_marks = [
+                ...(!mark1 ? [] : [
+                    Plot.line(data,{
+                        x: x_axis.name,
+                        y: mark1.name,
+                        strokeWidth: 1,
+                        ...(color && {stroke: color.name}),
+                        ...(fixed_color && {stroke: fixed_color}),
+                    })
+                ]),
+                ...(!(mark1_high && mark1_low) ? [] : [
+                    Plot.areaY(data,{
+                        x: x_axis.name,
+                        y1: mark1_high.name,
+                        y2: mark1_low.name,
+                        opacity: 0.3,
+                        ...(color && {fill: color.name}),
+                        ...(fixed_color && {fill: fixed_color}),
+                    })
+                ]),
+                ...(!mark2 ? [] : [
+                    ...(!(mark2_type == 'thick') ? [] : [
+                            Plot.line(data,{
+                                x: x_axis.name,
+                                y: mark2.name,
+                                strokeWidth: 3,
+                                ...(color && {stroke: color.name}),
+                                ...(fixed_color && {stroke: fixed_color}),
+                            })
+                        ]),
+                    ...(!(mark2_type == 'dot') ? [] : [
+                            Plot.dot(data,{
+                                x: x_axis.name,
+                                y: mark2.name,
+                                ...(color && {fill: color.name}),
+                                ...(fixed_color && {fill: fixed_color}),
+                                r: 4, 
+                            }),
+                        ])
+                ]),
+                // Stacks
+                ...(!stack_2_3 ? [] : [
+                    // Area Mark 2
+                    Plot.areaY(data,{
+                        x: x_axis.name,
+                        y1: d => d[mark2.name] ? 0 : null,
+                        y2: d => d[mark2.name] ? d[mark2.name] : null,
+                        opacity: 0.3,
+                        fill: d => mark2_label
+                    }),
+                    Plot.line(data,{
+                        x: x_axis.name,
+                        y: mark2.name,
+                        strokeWidth: 2,
+                        stroke: d => mark2_label
+                    }),
+                    // Area Mark 3
+                    Plot.areaY(data,{
+                        x: x_axis.name,
+                        y1: d => d[mark2.name] ? d[mark2.name] : null,
+                        y2: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] : null,
+                        opacity: 0.3,
+                        fill: d => mark3_label
+                    }),
+                    Plot.line(data,{
+                        x: x_axis.name,
+                        y: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] : null,
+                        strokeWidth: 2,
+                        stroke: d => mark3_label
+                    }),
+                ]),
+                ...(!stack_2_3_4 ? [] : [
+                    // Area Mark 2
+                    Plot.areaY(data,{
+                        x: x_axis.name,
+                        y1: d => d[mark2.name] ? 0 : null,
+                        y2: d => d[mark2.name] ? d[mark2.name] : null,
+                        opacity: 0.3,
+                        fill: d => mark2_label
+                    }),
+                    Plot.line(data,{
+                        x: x_axis.name,
+                        y: mark2.name,
+                        strokeWidth: 2,
+                        stroke: d => mark2_label
+                    }),
+                    // Area Mark 3
+                    Plot.areaY(data,{
+                        x: x_axis.name,
+                        y1: d => d[mark2.name] ? d[mark2.name] : null,
+                        y2: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] : null,
+                        opacity: 0.3,
+                        fill: d => mark3_label
+                    }),
+                    Plot.line(data,{
+                        x: x_axis.name,
+                        y: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] : null,
+                        strokeWidth: 2,
+                        stroke: d => mark3_label
+                    }),
+                    // Area Mark 4
+                    Plot.areaY(data,{
+                        x: x_axis.name,
+                        y1: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] : null,
+                        y2: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] + d[mark4.name] : null,
+                        opacity: 0.3,
+                        fill: d => mark4_label
+                    }),
+                    Plot.line(data,{
+                        x: x_axis.name,
+                        y: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] + d[mark4.name] : null,
+                        strokeWidth: 2,
+                        stroke: d => mark4_label
+                    }),
+                ]),
+                ...(!stack_3_4 ? [] : [
+                    // Area Mark 3
+                    Plot.areaY(data,{
+                        x: x_axis.name,
+                        y1: d => d[mark3.name] ? 0 : null,
+                        y2: d => d[mark3.name] ? d[mark3.name] : null,
+                        opacity: 0.3,
+                        fill: d => mark3_label
+                    }),
+                    Plot.line(data,{
+                        x: x_axis.name,
+                        y: d => d[mark3.name] ? d[mark3.name] : null,
+                        strokeWidth: 2,
+                        stroke: d => mark3_label
+                    }),
+                    // Area Mark 4
+                    Plot.areaY(data,{
+                        x: x_axis.name,
+                        y1: d => d[mark3.name] ? d[mark3.name] : null,
+                        y2: d => d[mark3.name] ? d[mark3.name] + d[mark4.name] : null,
+                        opacity: 0.3,
+                        fill: d => mark4_label
+                    }),
+                    Plot.line(data,{
+                        x: x_axis.name,
+                        y: d => d[mark3.name] ? d[mark3.name] + d[mark4.name] : null,
+                        strokeWidth: 2,
+                        stroke: d => mark4_label
+                    }),
+                ]),
+                // Release dates
+                ...(!releasedates ? [] : [
+                    Plot.ruleX(data, Plot.groupX({x:'first'},{
+                        filter: f => f.release_version > '',
+                        x: x_axis.name,
+                        strokeOpacity: 0.3, 
+                        strokeDasharray: '5,5'
+                    })),
+                    Plot.text(data, Plot.groupX({text:'first'},{
+                        filter: f => f.release_version > '',
+                        x: x_axis.name,
+                        text: 'release_version',
+                        frameAnchor: 'top',  
+                        lineAnchor: 'bottom',
+                        textAnchor: 'end', 
+                        opacity: 0.3, 
+                        rotate: -90, 
+                        dx: -3
+                    }))
+                ]),
+                // Tooltip marks
+                Plot.ruleX(data, Plot.pointerX({
+                    x: x_axis.name,
+                    strokeWidth: 0.5, 
+                    strokeDasharray: '3,3'
+                })),
+            ]
+
           // Plot object
           const plot_arguments = ({
             // Layout
@@ -362,7 +555,7 @@ function buildChart({
             x: {
                 label: x_axis_label,
                 labelOffset: 40,
-                ...(charttype == 'line' && {
+                ...(['line','stacked_area'].includes(charttype) && {
                         ...(x_axis.type.includes('_date') && {type: 'utc' as Plot.ScaleType, ticks: 'week'}),
                         grid: true,
                     }),
@@ -377,12 +570,13 @@ function buildChart({
                 nice: true,
                 zero: true
             },
-            ...(color && {
+            ...((color || is_stack) && {
                 color: {
                     legend: true,
                     type: 'categorical' as Plot.ScaleType,
                     label: color_label,
-                    className: 'plotColorLegend'
+                    className: 'plotColorLegend',
+                    ...stack_color_pallete
                 },
             }),
             facet: {
@@ -407,6 +601,7 @@ function buildChart({
             [
                 ...(charttype == 'line' ? line_marks : [] ),
                 ...(charttype == 'bar' ? bar_marks : [] ),
+                ...(charttype == 'stacked_area' ? stacked_area_marks : [] ),
                 ...common_marks
             ]
           })
@@ -414,7 +609,7 @@ function buildChart({
           const chart = Plot.plot(plot_arguments);
 
           // Adding the legend label
-          const legendLabel = (color && 
+          const legendLabel = ((color || is_stack) && 
                                 d3.select(chart)
                                 .select('.plotColorLegend-swatches')
                                 .insert('span',":first-child").classed('plotColorLegend-swatch',true)
@@ -442,7 +637,7 @@ const get_options = function () {
         values: [
             {'Line': 'line'},
             {'Bar':'bar'},
-            // {'Area':'area'},
+            {'Stacked Area':'stacked_area'}
         ],
         display_size: 'normal',
         default: 'line',
@@ -625,6 +820,34 @@ const get_options = function () {
 
     n_config++;
 
+    vizOptions['mark3'] = {
+        type: "string",
+        section: "1. Main",
+        label: "Mark #3 (AreaStack)",
+        display: "select",
+        values: [],
+        display_size: 'half',
+        default: '',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['mark4'] = {
+        type: "string",
+        section: "1. Main",
+        label: "Mark #4 (AreaStack)",
+        display: "select",
+        values: [],
+        display_size: 'half',
+        default: '',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
     vizOptions['facets_label'] = {
         type: "string",
         section: "1. Main",
@@ -748,6 +971,32 @@ const get_options = function () {
         type: "string",
         section:"2. Extra",
         label: "Mark 2",
+        display: "text",
+        default: "",
+        display_size: 'normal',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['mark3_customlabel'] = {
+        type: "string",
+        section:"2. Extra",
+        label: "Mark 3",
+        display: "text",
+        default: "",
+        display_size: 'normal',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['mark4_customlabel'] = {
+        type: "string",
+        section:"2. Extra",
+        label: "Mark 4",
         display: "text",
         default: "",
         display_size: 'normal',
@@ -919,7 +1168,7 @@ const options_update = function(config, vizObject,raw_data) {
                 ]
     }
 
-    const measure_options = ['mark1', 'mark1_high', 'mark1_low', 'mark2']
+    const measure_options = ['mark1', 'mark1_high', 'mark1_low', 'mark2','mark3','mark4']
 
 
     measure_options.forEach(option => {
@@ -939,8 +1188,20 @@ const options_update = function(config, vizObject,raw_data) {
     if (['bar'].includes(charttype)) {
         myOptions['mark2']['hidden'] = true;
         myOptions['mark2_type']['hidden'] = true;
+        myOptions['mark2_customlabel']['hidden'] = true;
+        myOptions['mark3']['hidden'] = true;
+        myOptions['mark3_customlabel']['hidden'] = true;
+        myOptions['mark4']['hidden'] = true;
+        myOptions['mark4_customlabel']['hidden'] = true;
     }
     if (['line'].includes(charttype)) {
+        myOptions['uncertainty_values']['hidden'] = true;
+        myOptions['mark3']['hidden'] = true;
+        myOptions['mark3_customlabel']['hidden'] = true;
+        myOptions['mark4']['hidden'] = true;
+        myOptions['mark4_customlabel']['hidden'] = true;
+    }
+    if (['stacked_area'].includes(charttype)) {
         myOptions['uncertainty_values']['hidden'] = true;
     }
 
