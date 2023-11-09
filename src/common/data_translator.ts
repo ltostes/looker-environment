@@ -2,6 +2,7 @@ import {
     VisQueryResponse
 } from './types'
 import { d3formatType } from './utils';
+import * as d3 from 'd3';
 
 // Types
 
@@ -178,5 +179,13 @@ export function lookerDataTranslator(
         prepared_dataset = prepared_dataset.map(d => ({...d, [dim.name]: d[dim.name] + '-01'}));
     })
 
-    return {data: prepared_dataset, dimensions, measures, pivots, super_measures, super_data: sm_prepared_dataset};
+    // Fixing pivots that are filtered
+    const unc_count_data = prepared_dataset.map(d => ({...d, non_unc: d3.sum(measures.map(m => typeof d[m.name] == 'undefined' ? 0 : 1))}))
+    const valid_pivot_keys = piv => d3.rollups(unc_count_data, v => d3.sum(v, d => d.non_unc), d => d[piv.name]).filter(f => f[1] > 0).map(d => d[0]);
+
+    const fixed_pivots = pivots.map(p => ({...p, keys: valid_pivot_keys(p)}));
+
+    const fixed_pivots_dataset = prepared_dataset.filter(f => fixed_pivots.map(p => p.keys.includes(f[p.name])).every(v => v === true))
+
+    return {data: fixed_pivots_dataset, dimensions, measures, pivots: fixed_pivots, super_measures, super_data: sm_prepared_dataset};
 };
