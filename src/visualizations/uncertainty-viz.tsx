@@ -59,16 +59,19 @@ function buildChart({
             // Filtering data
             const data = data_prefilter.filter(d => !d.filter);
 
-            // Marks
-            const mark1 = extra.measures.find(f => f.name == params['mark1']);
-            const mark1_high = extra.measures.find(f => f.name == params['mark1_high']);
-            const mark1_low = extra.measures.find(f => f.name == params['mark1_low']);
+            // Possible measures
+            const possible_measures = [...extra.measures, ...(extra.super_measures)]
 
-            const mark2 = extra.measures.find(f => f.name == params['mark2']);
+            // Marks
+            const mark1 = possible_measures.find(f => f.name == params['mark1']);
+            const mark1_high = possible_measures.find(f => f.name == params['mark1_high']);
+            const mark1_low = possible_measures.find(f => f.name == params['mark1_low']);
+
+            const mark2 = possible_measures.find(f => f.name == params['mark2']);
             const mark2_type = params['mark2_type'];
 
-            const mark3 = extra.measures.find(f => f.name == params['mark3']);
-            const mark4 = extra.measures.find(f => f.name == params['mark4']);
+            const mark3 = possible_measures.find(f => f.name == params['mark3']);
+            const mark4 = possible_measures.find(f => f.name == params['mark4']);
 
             const main_mark = mark1 || mark2;
 
@@ -127,7 +130,7 @@ function buildChart({
             const threshold_color = params['threshold_color'];
             
             // Version release dates (if present)
-            const releasedates = extra.measures.find(f => f.name == 'release_version');
+            const releasedates = possible_measures.find(f => f.name == 'release_version');
 
             // Common Marks
             const common_marks = [
@@ -1219,7 +1222,10 @@ const vis : VisualizationDefinition = {
             const dimensions = raw_data.dimensions;
             const pivots = raw_data.pivots;
 
-            const translated_data = raw_data.data //dataFulfiller(raw_data);
+            const super_measures = raw_data.super_measures;
+            const super_data = raw_data.super_data;
+
+            const translated_data = raw_data.data;
 
             // Now updating the options based on data available
             options_update(config, this, raw_data);
@@ -1233,7 +1239,7 @@ const vis : VisualizationDefinition = {
 
             // Additional parameters
             // This iteration is to allow variables to be reused in definitions
-            let extra = {measures, dimensions, pivots, width, height};
+            let extra = {measures, dimensions, pivots, width, height, super_measures};
 
             // SENDING TO CHART CONFIG
             const chart_config = {
@@ -1242,6 +1248,17 @@ const vis : VisualizationDefinition = {
               extra,
               width,
               height
+            }
+
+            // Updating to super data if configured
+            if (
+                false
+                || super_measures.map(d => d.name).includes(params.mark1)
+                || super_measures.map(d => d.name).includes(params.mark2)
+                || super_measures.map(d => d.name).includes(params.mark1_low)
+                || super_measures.map(d => d.name).includes(params.mark1_high)
+                ) {
+                chart_config['translated_data'] = super_data;
             }
 
             // graph_node.node().append(addTooltips(Plot.plot(plot_arguments),tooltip_options));// Finally update the state with our new data
@@ -1266,6 +1283,7 @@ const options_update = function(config, vizObject,raw_data) {
     // How the options will be added
 
     const list_as_option = d => ({[d.label] : d.name});
+    const list_super_as_option = d => ({[`${d.label} *`] : d.name});
 
     const possible_dimensions = [
         ...((raw_data.dimensions.length == 0) ? [] : raw_data.dimensions.map(list_as_option)),
@@ -1275,6 +1293,7 @@ const options_update = function(config, vizObject,raw_data) {
     const possible_measures = [
         {'None':''},
         ...((raw_data.measures.length == 0) ? [] : raw_data.measures.map(list_as_option)),
+        ...((raw_data.super_measures.length == 0) ? [] : raw_data.super_measures.map(list_super_as_option)),
     ].filter(f => !(f['Released Versions']));
 
     const dim_options = ['x_axis', 'facet_x','facet_y'];
