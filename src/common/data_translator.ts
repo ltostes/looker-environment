@@ -55,6 +55,8 @@ export function lookerDataTranslator(
         dimensions: Dimension[];
         measures: Measure[];
         pivots: Pivot[];
+        super_measures: Measure[];
+        super_data: Row[];
     } {
 
     const data = in_data;
@@ -82,7 +84,7 @@ export function lookerDataTranslator(
             keys: [...new Set(query_response.pivots.map((d) => d.data[acessor_function(piv)]))]
           }))
 
-    const measures: Measure[] = query_response.fields.measure_like.map((mes: Field) => ({
+    const measures: Measure[] = query_response.fields.measure_like?.map((mes: Field) => ({
       name: mes.name.includes('.') ? mes.name.split('.')[1] : mes.name, 
       model: mes.name.includes('.') ? mes.name.split('.')[0] : null, 
       label: mes.name.includes('.') ? mes.label_short : mes.label,
@@ -92,6 +94,17 @@ export function lookerDataTranslator(
       looker_value_format: mes.value_format,
       d3_value_format: d3formatType(mes.value_format),
       }));
+
+    const super_measures: Measure[] = query_response.fields.supermeasure_like?.map((mes: Field) => ({
+      name: mes.name.includes('.') ? mes.name.split('.')[1] : mes.name, 
+      model: mes.name.includes('.') ? mes.name.split('.')[0] : null, 
+      label: mes.name.includes('.') ? mes.label_short : mes.label,
+      type: mes.name.includes('.') ? mes.type : 'sum',
+      info: 'supermeasure',
+      is_table_calculation: mes.is_table_calculation,
+      looker_value_format: mes.value_format,
+      d3_value_format: d3formatType(mes.value_format),
+      })) || [];
   
     const all_props = [...dimensions, ...pivots]
       
@@ -153,10 +166,17 @@ export function lookerDataTranslator(
         prepared_dataset =  row_values;
     }
 
+    // Supermeasures data
+    let sm_prepared_dataset = [];
+    if (super_measures) {
+      const sm_accessors : Array<Dimension | Measure>  = [...dimensions,...super_measures]
+      sm_prepared_dataset = data.map(row => (Object.assign({},...sm_accessors.map((d: Dimension | Measure) => ({[d.name]: (row[acessor_function(d)]).value})))))
+    }
+
     // Fixing dates in month and quarter
     dimensions.filter(d => ['date_month','date_quarter'].includes(d.type)).forEach(function(dim) {
         prepared_dataset = prepared_dataset.map(d => ({...d, [dim.name]: d[dim.name] + '-01'}));
     })
 
-    return {data: prepared_dataset, dimensions: dimensions, measures: measures, pivots: pivots};
+    return {data: prepared_dataset, dimensions, measures, pivots, super_measures, super_data: sm_prepared_dataset};
 };
