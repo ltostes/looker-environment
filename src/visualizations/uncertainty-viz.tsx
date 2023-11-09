@@ -128,6 +128,8 @@ function buildChart({
 
             const threshold = !isNaN(params['threshold_number']) && (params['threshold_number'] > '') && Number(params['threshold_number']);
             const threshold_color = params['threshold_color'];
+
+            const remove_x_labels = !!(charttype == 'bar' && color);
             
             // Version release dates (if present)
             const releasedates = possible_measures.find(f => f.name == 'release_version');
@@ -647,7 +649,7 @@ function buildChart({
                 inset:10, 
                 marginLeft: autoMargin(data, d => mark_numformatter(d[main_mark.name]),15,fontSize),
                 marginRight: (
-                              (facet_y && ['line','bar','line_threshold','stacked_area'].includes(charttype)) && (autoMargin(data, d => `${d[facet_y.name]}`,15,fontSize) + 10))
+                              (facet_y && ['line','bar','line_threshold','stacked_area'].includes(charttype)) && (autoMargin(data, d => `${d[facet_y.name]}`,15,fontSize) + 15))
                               || (charttype == 'line_threshold' && 60)
                               || 15,
                 marginBottom: (facet_x && charttype == 'bar') ? 50 : 50,
@@ -667,9 +669,9 @@ function buildChart({
                             ...(x_axis.type.includes('_date') && {type: 'utc' as Plot.ScaleType, ticks: 'week'}),
                             grid: true,
                         }),
-                    ...(charttype == 'bar' && {
-                            ...(color && {axis: null}),
-                        })
+                    ...(remove_x_labels && {
+                            axis: null,
+                        }),
                 },
                 y: {
                     tickFormat: mark_numformat,
@@ -701,7 +703,7 @@ function buildChart({
                 ...(facet_y && {
                     fy: {
                         label: facet_y_label,
-                        labelOffset: autoMargin(data, d => `${d[facet_y.name]}`,15,fontSize) + 8 //35
+                        labelOffset: autoMargin(data, d => `${d[facet_y.name]}`,15,fontSize) + 10 //35
                     }
                 }),
                 // Marks
@@ -715,6 +717,24 @@ function buildChart({
                 ]
             })
 
+            const pre_chart = Plot.plot(plot_arguments);
+
+            // Calculating the need to rotate X axis
+            const x_scale = pre_chart.scale('x');
+
+            const max_length = autoMargin(data, d => `${d[x_axis.name]}`,0,fontSize);
+            const sizetest = max_length > (x_scale.step + 10); // 10 is arbitrary here
+
+            if (sizetest && !remove_x_labels) {
+                const angle = 45;
+                const angle_radians = angle * Math.PI / 180;
+                const max_label_dist = (autoMargin(data, d => `${d[x_axis.name]}`,15,fontSize) * Math.sin(angle_radians));
+
+                plot_arguments.x['tickRotate'] = angle;
+                plot_arguments.x['labelOffset'] = max_label_dist + 5;
+                plot_arguments['marginBottom'] = max_label_dist + 10;
+            }
+
             const chart = Plot.plot(plot_arguments);
 
             // Adding the legend label
@@ -725,8 +745,8 @@ function buildChart({
                                     .text(color_label)
                                     .style("font-size",`${fontSize}px`)
                                 );
-            
-            // Attaching the visuals
+
+
             return chart;
 }
 
