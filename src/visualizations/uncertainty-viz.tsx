@@ -646,7 +646,8 @@ function buildChart({
                 width: width,
                 inset:10, 
                 marginLeft: autoMargin(data, d => mark_numformatter(d[main_mark.name]),15,fontSize),
-                marginRight: ((facet_y && charttype == 'line') && autoMargin(data, d => d[facet_y.name],10,fontSize))
+                marginRight: (
+                              (facet_y && ['line','bar','line_threshold','stacked_area'].includes(charttype)) && (autoMargin(data, d => `${d[facet_y.name]}`,15,fontSize) + 10))
                               || (charttype == 'line_threshold' && 60)
                               || 15,
                 marginBottom: (facet_x && charttype == 'bar') ? 50 : 50,
@@ -700,7 +701,7 @@ function buildChart({
                 ...(facet_y && {
                     fy: {
                         label: facet_y_label,
-                        labelOffset: 35
+                        labelOffset: autoMargin(data, d => `${d[facet_y.name]}`,15,fontSize) + 8 //35
                     }
                 }),
                 // Marks
