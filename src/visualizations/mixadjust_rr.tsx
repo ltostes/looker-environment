@@ -15,12 +15,14 @@ declare var looker: Looker;
 
 function TestComponent({chartConfig}) {
 
+  const opt_filter = f => !(f == chartConfig.yourgamefilter_game_name);
+
   const params = [{
                     varname: "chosen_cohort",
                     viewlabel: "Comparison",
                     show: true,
                     type: 'radio',
-                    config_obj: {list: chartConfig.extra.dimensions[0].keys, default: chartConfig.extra.dimensions[0].keys[0]}
+                    config_obj: {list: chartConfig.extra.dimensions[0].keys.filter(opt_filter), default: chartConfig.extra.dimensions[0].keys.filter(opt_filter)[0]}
                   },
                   {
                     varname: "collapse_volume_live",
@@ -100,11 +102,12 @@ function TestComponent({chartConfig}) {
   )
 }
 
-function buildMixAdjustChart({ translated_data, extra, height, width }) {
+function buildMixAdjustChart({ translated_data, extra, height, width, yourgamefilter_game_name }) {
   // Data calculations
   const { segments_data, main_data, volume_compound_data } = transformData({
     translated_data,
-    extra
+    extra,
+    yourgamefilter_game_name
   });
 
   // Graph params
@@ -145,10 +148,7 @@ function buildMixAdjustChart({ translated_data, extra, height, width }) {
 
   const unc_params = {};
 
-  const main_game = translated_data
-    .find((f) => f.cohort_name.includes("(Other Cohort)"))
-    .cohort_name.split(" (")[0]
-    .trim();
+  const main_game = yourgamefilter_game_name; 
   const comparison_game = segments_data[0].cohort_name.trim();
   const unsignificant_segments = segments_data
     .filter((f) => !f.is_relevant_segment)
@@ -544,11 +544,12 @@ function buildMixAdjustChart({ translated_data, extra, height, width }) {
   });
 }
 
-function transformData({ translated_data, extra }) {
+function transformData({ translated_data, extra, yourgamefilter_game_name }) {
   // Hardcoded references
   const initial_volume_compound_label = "rr1_considering_relevant_segments";
   const initial_segment_compound_label = "rr1_mix_adjusted";
   const mix_adjusted_key = "rr1_mix_adjusted"; // To remove automatic calculation
+  const game_name_key = "main_project_measure"; // To remove automatic calculation
 
   // Filtering only the cohort we want
   const fdata = translated_data.filter(
@@ -573,6 +574,7 @@ function transformData({ translated_data, extra }) {
     (f) =>
       !segments_keys.includes(f) &&
       !f.includes("_std") &&
+      !(f == game_name_key) &&
       !(f == mix_adjusted_key)
   );
 
@@ -731,6 +733,9 @@ const vis : VisualizationDefinition = {
 
             const translated_data = raw_data.data //dataFulfiller(raw_data);
 
+            // Fix to get the name game
+            const yourgamefilter_game_name = in_data[0]['early_engagement_mix_adjusted_detailed.main_project_measure'].html;
+
             // Now updating the options based on data available -- Not available for now
             // options_update(config, this, raw_data); 
 
@@ -752,7 +757,8 @@ const vis : VisualizationDefinition = {
               translated_data,
               extra,
               width,
-              height
+              height,
+              yourgamefilter_game_name
             }
 
             // graph_node.node().append(addTooltips(Plot.plot(plot_arguments),tooltip_options));// Finally update the state with our new data
