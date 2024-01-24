@@ -78,7 +78,9 @@ function buildChart({
             // Options
             const charttype = params['charttype'];
             const x_axis = [...extra.dimensions, ...extra.pivots].find(f => f.name == params['x_axis']);
+            const show_x_axis = params['show_x_axis'];
             const color = [...extra.dimensions, ...extra.pivots].find(f => f.name == params['color']);
+            const show_color_legend = params['show_color_legend'];
             const fixed_color = d3['schemeTableau10'].find(f => f == params['color']);
 
             const facet_x = [...extra.dimensions, ...extra.pivots].find(f => f.name == params['facet_x']);
@@ -129,7 +131,7 @@ function buildChart({
             const threshold = !isNaN(params['threshold_number']) && (params['threshold_number'] > '') && Number(params['threshold_number']);
             const threshold_color = params['threshold_color'];
 
-            const remove_x_labels = !!(charttype == 'bar' && color);
+            // const remove_x_labels = !!(charttype == 'bar' && color); //-- Old automatic way to calculate
             
             // Version release dates (if present)
             const releasedates = possible_measures.find(f => f.name == 'release_version');
@@ -653,11 +655,15 @@ function buildChart({
                               || (charttype == 'line_threshold' && 60)
                               || 15,
                 marginBottom: (facet_x && charttype == 'bar') ? 50 : 50,
-                marginTop: (
+                marginTop: ((
                             (facet_x && charttype == 'line')
                             ||
                             (facet_x && charttype == 'bar' && x_axis && !color)
-                        ) ? 50 : 30,
+                            ) && 50)
+                            || ((
+                              facet_x && show_x_axis
+                            ) && 50)
+                            || 30,
                 style: {
                     fontSize: fontSize + 'px' 
                 },
@@ -669,7 +675,8 @@ function buildChart({
                             ...(x_axis.type.includes('_date') && {type: 'utc' as Plot.ScaleType, ticks: 'week'}),
                             grid: true,
                         }),
-                    ...(remove_x_labels && {
+                    // ...(remove_x_labels && {
+                    ...(!show_x_axis && {  
                             axis: null,
                         }),
                 },
@@ -682,7 +689,9 @@ function buildChart({
                 },
                 ...((color || is_stack) && {
                     color: {
-                        legend: true,
+                        ...(show_color_legend && {  
+                            legend: true,
+                        }),
                         type: 'categorical' as Plot.ScaleType,
                         label: color_label,
                         className: 'plotColorLegend',
@@ -725,7 +734,7 @@ function buildChart({
             const max_length = autoMargin(data, d => `${d[x_axis.name]}`,0,fontSize);
             const sizetest = max_length > (x_scale.step + 10); // 10 is arbitrary here
 
-            if (sizetest && !remove_x_labels) {
+            if (sizetest && show_x_axis) {
                 const angle = 45;
                 const angle_radians = angle * Math.PI / 180;
                 const max_label_dist = (autoMargin(data, d => `${d[x_axis.name]}`,15,fontSize) * Math.sin(angle_radians));
@@ -815,6 +824,32 @@ const get_options = function () {
         order: n_config
     }
 
+    n_config++;
+
+    vizOptions['show_x_axis'] = {
+        type: "boolean",
+        section: "1. Main",
+        label: "Show X axis?",
+        display: "select",
+        display_size: 'half',
+        default: true,
+        hidden: false,
+        order: n_config
+    }
+    
+    n_config++;
+
+    vizOptions['show_color_legend'] = {
+        type: "boolean",
+        section: "1. Main",
+        label: "Show Color Legend?",
+        display: "select",
+        display_size: 'half',
+        default: true,
+        hidden: false,
+        order: n_config
+    }
+    
     n_config++;
 
     vizOptions['marks_label'] = {
