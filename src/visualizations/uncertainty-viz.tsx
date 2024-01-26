@@ -416,8 +416,8 @@ function buildChart({
                         // Area Mark 2
                         Plot.areaY(data,{
                             x: x_axis.name,
-                            y1: d => d[mark2.name] ? 0 : null,
-                            y2: d => d[mark2.name] ? d[mark2.name] : null,
+                            y1: d => (!(d[mark2.name] === undefined || d[mark2.name] === null)) ? 0 : null,
+                            y2: d => (!(d[mark2.name] === undefined || d[mark2.name] === null)) ? d[mark2.name] : null,
                             opacity: 0.3,
                             fill: d => mark2_label
                         }),
@@ -430,14 +430,14 @@ function buildChart({
                         // Area Mark 3
                         Plot.areaY(data,{
                             x: x_axis.name,
-                            y1: d => d[mark2.name] ? d[mark2.name] : null,
-                            y2: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] : null,
+                            y1: d => (!(d[mark2.name] === undefined || d[mark2.name] === null)) ? d[mark2.name] : null,
+                            y2: d => (!(d[mark2.name] === undefined || d[mark2.name] === null)) ? d[mark2.name] + d[mark3.name] : null,
                             opacity: 0.3,
                             fill: d => mark3_label
                         }),
                         Plot.line(data,{
                             x: x_axis.name,
-                            y: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] : null,
+                            y: d => (!(d[mark2.name] === undefined || d[mark2.name] === null)) ? d[mark2.name] + d[mark3.name] : null,
                             strokeWidth: 2,
                             stroke: d => mark3_label
                         }),
@@ -446,8 +446,8 @@ function buildChart({
                         // Area Mark 2
                         Plot.areaY(data,{
                             x: x_axis.name,
-                            y1: d => d[mark2.name] ? 0 : null,
-                            y2: d => d[mark2.name] ? d[mark2.name] : null,
+                            y1: d => (!(d[mark2.name] === undefined || d[mark2.name] === null)) ? 0 : null,
+                            y2: d => (!(d[mark2.name] === undefined || d[mark2.name] === null)) ? d[mark2.name] : null,
                             opacity: 0.3,
                             fill: d => mark2_label
                         }),
@@ -460,28 +460,28 @@ function buildChart({
                         // Area Mark 3
                         Plot.areaY(data,{
                             x: x_axis.name,
-                            y1: d => d[mark2.name] ? d[mark2.name] : null,
-                            y2: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] : null,
+                            y1: d => (!(d[mark2.name] === undefined || d[mark2.name] === null)) ? d[mark2.name] : null,
+                            y2: d => (!(d[mark2.name] === undefined || d[mark2.name] === null)) ? d[mark2.name] + d[mark3.name] : null,
                             opacity: 0.3,
                             fill: d => mark3_label
                         }),
                         Plot.line(data,{
                             x: x_axis.name,
-                            y: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] : null,
+                            y: d => d[mark2.name] + d[mark3.name] > 0 ? d[mark2.name] + d[mark3.name] : null,
                             strokeWidth: 2,
                             stroke: d => mark3_label
                         }),
                         // Area Mark 4
                         Plot.areaY(data,{
                             x: x_axis.name,
-                            y1: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] : null,
-                            y2: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] + d[mark4.name] : null,
+                            y1: d => (!(d[mark2.name] === undefined || d[mark2.name] === null)) ? d[mark2.name] + d[mark3.name] : null,
+                            y2: d => (!(d[mark2.name] === undefined || d[mark2.name] === null)) ? d[mark2.name] + d[mark3.name] + d[mark4.name] : null,
                             opacity: 0.3,
                             fill: d => mark4_label
                         }),
                         Plot.line(data,{
                             x: x_axis.name,
-                            y: d => d[mark2.name] ? d[mark2.name] + d[mark3.name] + d[mark4.name] : null,
+                            y: d => d[mark2.name] + d[mark3.name] + d[mark4.name] > 0 ? d[mark2.name] + d[mark3.name] + d[mark4.name] : null,
                             strokeWidth: 2,
                             stroke: d => mark4_label
                         }),
@@ -490,28 +490,28 @@ function buildChart({
                         // Area Mark 3
                         Plot.areaY(data,{
                             x: x_axis.name,
-                            y1: d => d[mark3.name] ? 0 : null,
-                            y2: d => d[mark3.name] ? d[mark3.name] : null,
+                            y1: d => (!(d[mark3.name] === undefined || d[mark3.name] === null)) ? 0 : null,
+                            y2: d => (!(d[mark3.name] === undefined || d[mark3.name] === null)) ? d[mark3.name] : null,
                             opacity: 0.3,
                             fill: d => mark3_label
                         }),
                         Plot.line(data,{
                             x: x_axis.name,
-                            y: d => d[mark3.name] ? d[mark3.name] : null,
+                            y: d => (!(d[mark3.name] === undefined || d[mark3.name] === null)) ? d[mark3.name] : null,
                             strokeWidth: 2,
                             stroke: d => mark3_label
                         }),
                         // Area Mark 4
                         Plot.areaY(data,{
                             x: x_axis.name,
-                            y1: d => d[mark3.name] ? d[mark3.name] : null,
-                            y2: d => d[mark3.name] ? d[mark3.name] + d[mark4.name] : null,
+                            y1: d => (!(d[mark3.name] === undefined || d[mark3.name] === null)) ? d[mark3.name] : null,
+                            y2: d => (!(d[mark3.name] === undefined || d[mark3.name] === null)) ? d[mark3.name] + d[mark4.name] : null,
                             opacity: 0.3,
                             fill: d => mark4_label
                         }),
                         Plot.line(data,{
                             x: x_axis.name,
-                            y: d => d[mark3.name] ? d[mark3.name] + d[mark4.name] : null,
+                            y: d => (!(d[mark3.name] === undefined || d[mark3.name] === null)) ? d[mark3.name] + d[mark4.name] : null,
                             strokeWidth: 2,
                             stroke: d => mark4_label
                         }),
