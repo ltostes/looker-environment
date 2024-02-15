@@ -649,7 +649,7 @@ function buildChart({
                 height: height,
                 width: width,
                 inset:10, 
-                marginLeft: autoMargin(data, d => mark_numformatter(d[main_mark.name]),15,fontSize),
+                marginLeft: autoMargin(data, d => mark_numformatter(d[main_mark.name]),15,fontSize)+15,
                 marginRight: (
                               (facet_y && ['line','bar','line_threshold','stacked_area'].includes(charttype)) && (autoMargin(data, d => `${d[facet_y.name]}`,15,fontSize) + 15))
                               || (charttype == 'line_threshold' && 60)
@@ -672,7 +672,7 @@ function buildChart({
                     label: x_axis_label,
                     labelOffset: 40,
                     ...(['line','stacked_area','line_threshold'].includes(charttype) && {
-                            ...(x_axis.type.includes('_date') && {type: 'utc' as Plot.ScaleType, ticks: 'week'}),
+                            ...(x_axis.type.includes('date') && {type: 'utc' as Plot.ScaleType, ticks: 'week'}),
                             grid: true,
                         }),
                     // ...(remove_x_labels && {
@@ -785,7 +785,6 @@ const get_options = function () {
     }
 
     n_config++;
-
     vizOptions['breakdowns_label'] = {
         type: "string",
         section: "1. Main",
