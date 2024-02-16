@@ -250,6 +250,7 @@ const get_options = function () {
                 {'Crosshair':'crosshair'},
                 {'CrosshairX':'crosshairX'},
                 {'CrosshairY':'crosshairY'},
+                {'Difference':'differenceY'},
             ],
             display_size: 'normal',
             default: 'abs',
@@ -369,7 +370,7 @@ const vis : VisualizationDefinition = {
 
                 marks:
                     mark_configs
-                        .filter( d => ['dot','line','areaY','areaX','barY','barX','text','tickY','tickX','link','ruleY','ruleX','cell','arrow','vector','image','frame', 'rect', 'rectX', 'rectY','tip','tree','raster','gridX','gridY','auto','crosshair'].includes(d.type) && (d.show))
+                        .filter( d => ['dot','line','areaY','areaX','barY','barX','text','tickY','tickX','link','ruleY','ruleX','cell','arrow','vector','image','frame', 'rect', 'rectX', 'rectY','tip','tree','raster','gridX','gridY','auto','crosshair','crosshairX','crosshairY','differenceY'].includes(d.type) && (d.show))
                         .map(function(d) {
 
                             const mark_config = interpret_fun(d.config,data,extra);
@@ -411,6 +412,7 @@ const vis : VisualizationDefinition = {
                                 case 'crosshair': return Plot.crosshair(data, plot_params);
                                 case 'crosshairX': return Plot.crosshairX(data, plot_params);
                                 case 'crosshairY': return Plot.crosshairY(data, plot_params);
+                                case 'differenceY': return Plot.differenceY(data, plot_params);
 
                             }
                     }),
