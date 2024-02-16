@@ -366,7 +366,7 @@ const vis : VisualizationDefinition = {
                 ...((params['y'] != '') && ({y: y_config})),
                 ...((params['facet'] != '') && ({facet: {data: data, ...facet_config}})),
                 ...((params['style'] != '') && ({style: style_config})),
-                ...((params['color'] != '') && ({color: color_config})),
+                ...((params['color'] != '') && ({color: {scheme: 'Tableau10', ...color_config}})),
 
                 marks:
                     mark_configs
