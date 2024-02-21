@@ -356,6 +356,11 @@ const vis : VisualizationDefinition = {
             const tooltip_options = interpret_fun(params['tooltip_options'],data,extra);
             const others_config = interpret_fun(params['others'],data,extra);
 
+            // If the color range is not configured, use Tableau10 as default scheme
+            const default_color_scheme = {...(!(Object.keys(color_config).includes('range')) && 
+                                          {scheme: 'Tableau10'})
+                                        }
+
 
             // Plot object
             const plot_arguments = ({
@@ -366,7 +371,7 @@ const vis : VisualizationDefinition = {
                 ...((params['y'] != '') && ({y: y_config})),
                 ...((params['facet'] != '') && ({facet: {data: data, ...facet_config}})),
                 ...((params['style'] != '') && ({style: style_config})),
-                ...((params['color'] != '') && ({color: {scheme: 'Tableau10', ...color_config}})),
+                ...((params['color'] != '') && ({color: {...default_color_scheme, ...color_config}})),
 
                 marks:
                     mark_configs
