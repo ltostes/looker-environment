@@ -95,6 +95,10 @@ function buildChart({
 
             const fontSize = 12;
 
+            const same_x_filter_fun = d => f => f[x_axis.name] == d[x_axis.name] 
+                                                                    && (!facet_x || f[facet_x.name] == d[facet_x.name])
+                                                                    && (!facet_y || f[facet_y.name] == d[facet_y.name]);
+
             // Labels
             function label_fun(mark_name, mark_obj) : string {
                 return  ((params[mark_name + '_customlabel'] > '') && params[mark_name + '_customlabel'])
@@ -122,7 +126,7 @@ function buildChart({
             const stack_3_4   = (charttype == 'stacked_area' && mark2_type != 'area' && mark3 && mark4);
             const is_stack = stack_2_3_4 || stack_2_3 || stack_3_4;
 
-            const stack_color_pallete = false
+            const color_pallete = false
                             || (stack_2_3_4 && {domain: [mark2_label, mark3_label, mark4_label]})
                             || (stack_2_3   && {domain: [mark2_label, mark3_label]})
                             || (stack_3_4   && {domain: [mark3_label, mark4_label]})
@@ -131,13 +135,15 @@ function buildChart({
             const threshold = !isNaN(params['threshold_number']) && (params['threshold_number'] > '') && Number(params['threshold_number']);
             const threshold_color = params['threshold_color'];
 
+            const is_stacked_percentage = params['stacked_perc'];
+
             // const remove_x_labels = !!(charttype == 'bar' && color); //-- Old automatic way to calculate
             
             // Version release dates (if present)
             const releasedates = possible_measures.find(f => f.name == 'release_version');
 
             // Common Marks
-            const common_marks = [
+            const tip_mark = [
                 // Tip Mark
                 Plot.tip(data, Plot.pointerX({
                     x: x_axis.name,
@@ -243,6 +249,7 @@ function buildChart({
                         strokeDasharray: '3,3'
                     })),
                     // Common marks (Tip)
+                    ...tip_mark
                 ]
 
             const bar_marks_params = {
@@ -369,6 +376,7 @@ function buildChart({
                     strokeDasharray: '2,2'
                 }),
                 // Tooltip marks
+                ...tip_mark
             ]
 
             const stacked_area_marks = [
@@ -542,6 +550,127 @@ function buildChart({
                         strokeWidth: 0.5, 
                         strokeDasharray: '3,3'
                     })),
+                    ...tip_mark
+                ]
+
+            const stacked_area_dimension_marks = [
+                    // Mark1 is the Area mark
+                    ...(!mark1 ? [] : [
+                        Plot.areaY(data,
+                            Plot.stackY({
+                                ...(is_stacked_percentage && {offset: 'normalize'})
+                            },{
+                            x: x_axis.name,
+                            y: mark1.name,
+                            opacity: 0.3,
+                            ...(color && {fill: color.name}),
+                        })),
+                        Plot.line(data,
+                            Plot.stackY2({
+                                ...(is_stacked_percentage && {offset: 'normalize'})
+                            },{
+                            x: x_axis.name,
+                            y: mark1.name,
+                            opacity: 0.3,
+                            ...(color && {stroke: color.name}),
+                            }))
+                    ]),
+                    // Deactivated the high and low marks
+                    // ...(!(mark1_high && mark1_low) ? [] : [
+                    //     Plot.areaY(data,{
+                    //         x: x_axis.name,
+                    //         y1: mark1_high.name,
+                    //         y2: mark1_low.name,
+                    //         opacity: 0.3,
+                    //         ...(color && {fill: color.name}),
+                    //         ...(fixed_color && {fill: fixed_color}),
+                    //     })
+                    // ]),
+                    ...((!mark2 || is_stacked_percentage) ? [] : [
+                        ...(!(mark2_type == 'thick') ? [] : [
+                                Plot.line(data,
+                                    Plot.groupX({y:'sum'},{
+                                        x: x_axis.name,
+                                        y: mark2.name,
+                                        strokeWidth: 2,
+                                        stroke: 'black',
+                                        ...(fixed_color && {stroke: fixed_color}),
+                                    })
+                                ),
+                            ]),
+                        ...(!(mark2_type == 'dot') ? [] : [
+                                Plot.dot(data,{
+                                    x: x_axis.name,
+                                    y: mark2.name,
+                                    ...(color && {fill: color.name}),
+                                    ...(fixed_color && {fill: fixed_color}),
+                                    r: 4, 
+                                }),
+                            ])
+                    ]),
+                    // Release dates
+                    ...(!releasedates ? [] : [
+                        Plot.ruleX(data, Plot.groupX({x:'first'},{
+                            filter: f => f.release_version > '',
+                            x: x_axis.name,
+                            strokeOpacity: 0.3, 
+                            strokeDasharray: '5,5'
+                        })),
+                        Plot.text(data, Plot.groupX({text:'first'},{
+                            filter: f => f.release_version > '',
+                            x: x_axis.name,
+                            text: 'release_version',
+                            frameAnchor: 'top',  
+                            lineAnchor: 'bottom',
+                            textAnchor: 'end', 
+                            opacity: 0.3, 
+                            rotate: -90, 
+                            dx: -3
+                        }))
+                    ]),
+                    // Tooltip marks
+                    Plot.ruleX(data, Plot.pointerX({
+                        x: x_axis.name,
+                        strokeWidth: 0.5, 
+                        strokeDasharray: '3,3'
+                    })),
+                    // Tip Mark
+                    ...(is_stacked_percentage ? [] : [
+                            Plot.tip(data, Plot.pointerX(Plot.stackY2({
+                            x: x_axis.name,
+                            y: main_mark.name,
+                            textOverflow: 'ellipsis-middle',
+                            ...(color && {stroke: color.name}),
+                            ...(fixed_color && {stroke: fixed_color}),
+                            channels: 
+                                {
+            
+                                    ...(mark1 && {[mark1_label]: d => mark_numformatter(d[mark1.name])}),
+                                    ...(mark1_high && {[mark1_high_label]: d => mark_numformatter(d[mark1_high.name])}),
+                                    ...(mark1_low && {[mark1_low_label]: d => mark_numformatter(d[mark1_low.name])}),
+                                    ...(mark2 && {[mark2_label]: d => mark_numformatter(d[mark2.name])}),
+                                    ...(mark3 && {[mark3_label]: d => mark_numformatter(d[mark3.name])}),
+                                    ...(mark4 && {[mark4_label]: d => mark_numformatter(d[mark4.name])}),
+                                },
+                            // A stackY to when there's colored area in mark2
+                            ...((color && mark2_type == 'area' && charttype == 'line') && Plot.stackY2({x: x_axis.name,y: main_mark.name,stroke: color.name}))
+                        })))
+                    ]),
+                    ...(!is_stacked_percentage ? [] : [
+                        Plot.tip(data, Plot.pointerX(Plot.stackY({
+                                ...(is_stacked_percentage && {offset: 'normalize'})
+                            },{
+                            x: x_axis.name,
+                            y: main_mark.name,
+                            textOverflow: 'ellipsis-middle',
+                            ...(color && {stroke: color.name}),
+                            channels: 
+                                {
+                                    ...(mark1 && {[mark1_label]: d => mark_numformatter(d[mark1.name])}),
+                                    ...(mark1 && {[`${mark1_label} (%)`]: d => d3.format('.1%')(d[mark1.name] / d3.sum(data.filter(same_x_filter_fun(d)), s => s[mark1.name]))}),
+                                },
+                        }))),
+                    ]),
                 ]
 
             const line_threshold_marks = [
@@ -641,6 +770,7 @@ function buildChart({
                     strokeDasharray: '3,3'
                 })),
                 // Common marks (Tip)
+                ...tip_mark
             ]
 
             // Plot object
@@ -671,7 +801,7 @@ function buildChart({
                 x: {
                     label: x_axis_label,
                     labelOffset: 40,
-                    ...(['line','stacked_area','line_threshold'].includes(charttype) && {
+                    ...(['line','stacked_area','stacked_area_dimension','line_threshold'].includes(charttype) && {
                             ...(x_axis.type.includes('date') && {type: 'utc' as Plot.ScaleType, ticks: 'week'}),
                             grid: true,
                         }),
@@ -687,15 +817,26 @@ function buildChart({
                     nice: true,
                     zero: true
                 },
+                ...((['stacked_area_dimension'].includes(charttype) && is_stacked_percentage) && {
+                    y: {
+                        tickFormat: '.1%',
+                        label: mark1_label == 'None' ? mark2_label : mark1_label,
+                        grid: true,
+                        nice: true,
+                        zero: true,
+                        percentage: true
+                    }
+                }),
                 ...((color || is_stack) && {
                     color: {
                         ...(show_color_legend && {  
                             legend: true,
                         }),
                         type: 'categorical' as Plot.ScaleType,
+                        scheme: 'Tableau10' as Plot.ColorScheme,
                         label: color_label,
                         className: 'plotColorLegend',
-                        ...stack_color_pallete
+                        ...(color_pallete)
                     },
                 }),
                 facet: {
@@ -722,7 +863,7 @@ function buildChart({
                     ...(charttype == 'bar' ? bar_marks : [] ),
                     ...(charttype == 'stacked_area' ? stacked_area_marks : [] ),
                     ...(charttype == 'line_threshold' ? line_threshold_marks : [] ),
-                    ...common_marks
+                    ...(charttype == 'stacked_area_dimension' ? stacked_area_dimension_marks : [] )
                 ]
             })
 
@@ -775,7 +916,8 @@ const get_options = function () {
         values: [
             {'Line': 'line'},
             {'Bar':'bar'},
-            {'Stacked Area':'stacked_area'},
+            {'Stacked Area (Multi-measures)':'stacked_area'},
+            {'Stacked Area (Pivot or Dimension)':'stacked_area_dimension'},
             {'Line with Threshold':'line_threshold'}
         ],
         display_size: 'normal',
@@ -985,6 +1127,19 @@ const get_options = function () {
             {'Grey': d3['schemeTableau10'][9]},
         ],
         display_size: 'half',
+        hidden: false,
+        order: n_config
+    }
+
+    n_config++;
+
+    vizOptions['stacked_perc'] = {
+        type: "boolean",
+        section: "1. Main",
+        label: "Stack Percentage?",
+        display: "select",
+        display_size: 'normal',
+        default: true,
         hidden: false,
         order: n_config
     }
@@ -1413,6 +1568,8 @@ const options_update = function(config, vizObject,raw_data) {
         myOptions['mark4']['hidden'] = true;
         myOptions['mark4_customlabel']['hidden'] = true;
         myOptions['threshold_number']['hidden'] = true;
+        myOptions['threshold_color']['hidden'] = true;
+        myOptions['stacked_perc']['hidden'] = true;
     }
     if (['line'].includes(charttype)) {
         myOptions['uncertainty_values']['hidden'] = true;
@@ -1421,10 +1578,25 @@ const options_update = function(config, vizObject,raw_data) {
         myOptions['mark4']['hidden'] = true;
         myOptions['mark4_customlabel']['hidden'] = true;
         myOptions['threshold_number']['hidden'] = true;
+        myOptions['threshold_color']['hidden'] = true;
+        myOptions['stacked_perc']['hidden'] = true;
     }
     if (['stacked_area'].includes(charttype)) {
         myOptions['uncertainty_values']['hidden'] = true;
         myOptions['threshold_number']['hidden'] = true;
+        myOptions['threshold_color']['hidden'] = true;
+        myOptions['stacked_perc']['hidden'] = true;
+    }
+    if (['stacked_area_dimension'].includes(charttype)) {
+        myOptions['uncertainty_values']['hidden'] = true;
+        myOptions['threshold_number']['hidden'] = true;
+        myOptions['threshold_color']['hidden'] = true;
+        myOptions['mark1_low']['hidden'] = true;
+        myOptions['mark1_high']['hidden'] = true;
+        myOptions['mark3']['hidden'] = true;
+        myOptions['mark3_customlabel']['hidden'] = true;
+        myOptions['mark4']['hidden'] = true;
+        myOptions['mark4_customlabel']['hidden'] = true; 
     }
     if (['line_threshold'].includes(charttype)) {
         myOptions['uncertainty_values']['hidden'] = true;
@@ -1432,6 +1604,7 @@ const options_update = function(config, vizObject,raw_data) {
         myOptions['mark3_customlabel']['hidden'] = true;
         myOptions['mark4']['hidden'] = true;
         myOptions['mark4_customlabel']['hidden'] = true;
+        myOptions['stacked_perc']['hidden'] = true;
     }
 
     vizObject.trigger('registerOptions', myOptions);
